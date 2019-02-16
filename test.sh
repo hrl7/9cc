@@ -17,7 +17,8 @@ try() {
   fi
 }
 
-try 0 0 
+try 0 0
 try 255 255
 try 42 42
+try 21 '5+20-4'
 echo OK
