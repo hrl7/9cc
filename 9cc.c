@@ -164,8 +164,13 @@ int main(int argc, char **argv) {
   Node *node = add();
 
   printf(".intel_syntax noprefix\n");
+#ifdef __APPLE__
   printf(".global _main\n");
   printf("_main:\n");
+#else
+  printf(".global main\n");
+  printf("main:\n");
+#endif
 
   gen(node);
 
