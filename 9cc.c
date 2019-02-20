@@ -1,5 +1,9 @@
 #include "9cc.h"
 
+int pos;
+Vector *tokens;
+Node *code[100];
+
 Vector *new_vector() {
   Vector *vec = malloc(sizeof(Vector));
   vec->data = malloc(sizeof(void *) * 16);
@@ -17,7 +21,6 @@ void vec_push(Vector *vec, void *elm) {
   vec->data[vec->len++] = elm;
 }
 
-int pos;
 
 Node *new_node(int ty, Node *lhs, Node *rhs) {
   Node *node = malloc(sizeof(Node));
@@ -34,15 +37,23 @@ Node *new_node_num(int val) {
   return node;
 }
 
+Node *new_node_ident(char name) {
+  Node *node = malloc(sizeof(Node));
+  node->ty = ND_IDENT;
+  node->name = name;
+  return node;
+}
+
 int consume(int ty) {
-  if (tokens[pos].ty != ty) return 0;
+  Token *token = tokens->data[pos];
+  if (token->ty != ty) return 0;
   pos++;
   return 1;
 }
 
 void error(char *str, char *arg) {
-  //printf(str);
-  //fprintf(stderr, str, arg);
+  printf(str);
+  fprintf(stderr, str, arg);
   exit(1);
 }
 
@@ -78,16 +89,40 @@ Node *term() {
   if (consume('(')) {
     Node *node = add();
     if (!consume(')')) {
-      error("no corresponding close paren %s", tokens[pos].input);
+      Token *token = tokens->data[pos];
+      error("no corresponding close paren %s", token->input);
     }
     return node;
   }
 
-  if (tokens[pos].ty == TK_NUM) {
-    return new_node_num(tokens[pos++].val);
+  Token *token = tokens->data[pos];
+  if (token->ty == TK_NUM) {
+    token = tokens->data[pos++];
+    return new_node_num(token->val);
   }
 
-  error("invalid token: %s", tokens[pos].input);
+  if (token->ty == TK_IDENT) {
+    token = tokens->data[pos++];
+    return new_node_ident(token->input);
+  }
+
+  error("invalid token: %s", token->input);
+}
+
+Node *assign() {
+  Node *node = add();
+  if (consume('=')) {
+    node = new_node('=', node, assign());
+  }
+  return node;
+}
+
+Node *stmt() {
+  Node *node = assign();
+  if (!consume(';')) {
+    Token *token = tokens->data[pos];
+    error("expected token ';', got %s", token->input);
+  }
 }
 
 void gen(Node *node) {
@@ -125,18 +160,30 @@ void tokenize(char *p) {
       continue;
     }
 
-    if (*p == '+' || *p == '-' || *p == '*' || *p == '/' || *p == '(' || *p == ')') {
-      tokens[i].ty = *p;
-      tokens[i].input = p;
+    Token *token = malloc(sizeof(Token));
+    if (*p == '+' || *p == '-' || *p == '*' || *p == '/' || *p == '(' || *p == ')' || *p == '=' || *p == ';') {
+      token->ty = *p;
+      token->input = p;
+      vec_push(tokens, token);
+      i++;
+      p++;
+      continue;
+    }
+
+    if ('a' <= *p && *p <= 'z') {
+      token->ty = TK_IDENT;
+      token->input = p;
+      vec_push(tokens, token);
       i++;
       p++;
       continue;
     }
 
     if (isdigit(*p)) {
-      tokens[i].ty = TK_NUM;
-      tokens[i].input = p;
-      tokens[i].val = strtol(p, &p, 10);
+      token->ty = TK_NUM;
+      token->input = p;
+      token->val = strtol(p, &p, 10);
+      vec_push(tokens, token);
       i++;
       continue;
     }
@@ -145,8 +192,10 @@ void tokenize(char *p) {
     exit(1);
   }
 
-  tokens[i].ty = TK_EOF;
-  tokens[i].input = p;
+  Token *token = malloc(sizeof(Token));
+  token->ty = TK_EOF;
+  token->input = p;
+  vec_push(tokens, token);
 }
 
 
@@ -160,6 +209,7 @@ int main(int argc, char **argv) {
     return 0;
   }
 
+  tokens = new_vector();
   tokenize(argv[1]);
   Node *node = add();
 

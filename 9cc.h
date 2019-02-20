@@ -5,19 +5,20 @@
 
 enum {
   TK_NUM = 256,
+  TK_IDENT,
   TK_EOF,
 };
 
-typedef struct {
+typedef struct Token {
   int ty;
   int val;
   char *input;
 } Token;
 
-Token tokens[100];
 
 enum {
   ND_NUM = 256,
+  ND_IDENT,
 };
 
 typedef struct Node {
@@ -25,9 +26,10 @@ typedef struct Node {
   struct Node *lhs;
   struct Node *rhs;
   int val;
+  char name;
 } Node;
 
-typedef struct {
+typedef struct Vector {
   void **data;
   int capacity;
   int len;
@@ -37,9 +39,12 @@ typedef struct {
 Node *add();
 Node *mul();
 Node *term();
+Node *stmt();
+void program();
 
 Node *new_node(int ty, Node *lhs, Node *rhs);
 Node *new_node_num(int val);
+Node *new_node_ident(char name);
 
 Vector *new_vector();
 void vec_push(Vector *vec, void *elm);
