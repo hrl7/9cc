@@ -35,6 +35,10 @@ typedef struct Vector {
   int len;
 } Vector;
 
+typedef struct Map {
+  Vector *keys;
+  Vector *vals;
+} Map;
 
 Node *add();
 Node *mul();
@@ -48,6 +52,10 @@ Node *new_node_ident(char name);
 
 Vector *new_vector();
 void vec_push(Vector *vec, void *elm);
+
+Map *new_map();
+void map_put(Map *map, char *key, void *val);
+void *map_get(Map *map, char *key);
 
 int expect(int line, int expected, int actual);
 void runtest();
