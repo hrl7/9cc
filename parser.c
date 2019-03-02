@@ -40,6 +40,31 @@ void error(char *str, char *arg) {
   exit(1);
 }
 
+/*
+program: stmt program
+program: e
+
+stmt: assign ";"
+
+assign: cmp
+assign: add "=" assign
+
+cmp: add
+cmp: add "==" add
+cmp: add "!=" add
+
+add: mul
+add: add "+" mul
+add: add "-" mul
+
+mul: term
+mul: mul "*" term
+mul: mul "/" term
+
+term: num
+term: ident
+term: "(" add ")"
+*/
 Node *add() {
   Node *node = mul();
 
@@ -92,8 +117,18 @@ Node *term() {
   error("invalid token: %s", token->input);
 }
 
-Node *assign() {
+Node *cmp() {
   Node *node = add();
+  if (consume(TK_EQ)) {
+    node = new_node(ND_EQ, node, add());
+  } else if (consume(TK_NEQ)) {
+    node = new_node(ND_NEQ, node, add());
+  }
+  return node;
+}
+
+Node *assign() {
+  Node *node = cmp();
   if (consume('=')) {
     node = new_node('=', node, assign());
   }

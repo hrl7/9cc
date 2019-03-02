@@ -12,14 +12,13 @@ try() {
   if [ "$actual" = "$expected" ]; then
     echo "$input => $actual"
   else
+    echo "***** failed ******"
+    echo "$input => $actual"
     echo "$expected expected, but got $actual"
     exit 1
   fi
 }
 
-#try 0 0
-#try 255 255
-#try 42 42
 try 21 '5+20-4;'
 try 21 '5 + 20 - 4;'
 try 41 " 12 + 34 - 5 ;"
@@ -31,4 +30,9 @@ try 4 "hoge = 4;hoge;"
 try 8 "a=4;a + 4;"
 try 3 "a = 4; b = 5; c = 6; a + b - c;"
 try 3 "fuga= 4; hoge = 5; piyo  = 6; hoge+fuga-piyo;"
+try 1 "10 == 10;"
+try 0 "10 == 9;"
+try 0 "10 != 10;"
+try 1 "10 != 9;"
+try 2 "a = 0; b = 0; c = a == b; c + 1; "
 echo OK

@@ -8,6 +8,23 @@ void tokenize(char *p) {
     }
 
     Token *token = malloc(sizeof(Token));
+
+    if (*p == '=' && *(p+1) == '=') {
+      token->ty = TK_EQ;
+      token->input = NULL;
+      vec_push(tokens, token);
+      p += 2;
+      continue;
+    }
+
+    if (*p == '!' && *(p+1) == '=') {
+      token->ty = TK_NEQ;
+      token->input = NULL;
+      vec_push(tokens, token);
+      p += 2;
+      continue;
+    }
+
     if (*p == '+' || *p == '-' || *p == '*' || *p == '/' || *p == '(' || *p == ')' || *p == '=' || *p == ';') {
       token->ty = *p;
       token->input = p;
