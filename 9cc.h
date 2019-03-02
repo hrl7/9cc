@@ -59,3 +59,8 @@ void *map_get(Map *map, char *key);
 
 int expect(int line, int expected, int actual);
 void runtest();
+
+extern Map *variables;
+extern int pos;
+extern Node *code[100];
+extern Vector *tokens;
