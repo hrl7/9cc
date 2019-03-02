@@ -26,7 +26,7 @@ typedef struct Node {
   struct Node *lhs;
   struct Node *rhs;
   int val;
-  char name;
+  char *name;
 } Node;
 
 typedef struct Vector {
@@ -48,7 +48,7 @@ void program();
 
 Node *new_node(int ty, Node *lhs, Node *rhs);
 Node *new_node_num(int val);
-Node *new_node_ident(char name);
+Node *new_node_ident(char *name);
 
 Vector *new_vector();
 void vec_push(Vector *vec, void *elm);

@@ -3,6 +3,7 @@
 int pos;
 Vector *tokens;
 Node *code[100];
+Map *variables;
 
 Map *new_map() {
   Map *map = malloc(sizeof(Map));
@@ -16,11 +17,19 @@ void map_put(Map *map, char *key, void *val) {
   vec_push(map->vals, val);
 }
 
-void *map_get(Map *map, char *key) {
+int map_get_index(Map *map, char *key) {
   for (int i = map->keys->len - 1; i >= 0; i--) {
     if (strcmp(map->keys->data[i], key) == 0) {
-      return map->vals->data[i];
+      return i;
     }
+  }
+  return -1;
+}
+
+void *map_get(Map *map, char *key) {
+  int index = map_get_index(map, key);
+  if (index != -1) {
+    return map->vals->data[index];
   }
   return NULL;
 }
@@ -58,10 +67,15 @@ Node *new_node_num(int val) {
   return node;
 }
 
-Node *new_node_ident(char name) {
+Node *new_node_ident(char *name) {
   Node *node = malloc(sizeof(Node));
   node->ty = ND_IDENT;
+  node->name = malloc(sizeof(char) * (strlen(name) + 1));
   node->name = name;
+  if (!map_get(variables, name)) {
+    // TODO: replace latter "name" with Type annotation
+    map_put(variables, name, name);
+  }
   return node;
 }
 
@@ -123,8 +137,8 @@ Node *term() {
   }
 
   if (token->ty == TK_IDENT) {
-    token = tokens->data[pos++];
-    return new_node_ident(token->input);
+    char *name = ((Token *)tokens->data[pos++])->input;
+    return new_node_ident(name);
   }
 
   error("invalid token: %s", token->input);
@@ -162,9 +176,9 @@ void gen_lval(Node *node) {
     error("left value is not variable", node->ty);
   }
 
-  int offset = ('z' - node->name + 1) * 8;
+  int offset = map_get_index(variables, node->name) * 8;
   printf("  mov rax, rbp\n");
-  printf("  sub rax, %d\n", offset);
+  printf("  sub rax, %d # var %s\n", offset, node->name);
   printf("  push rax\n");
 }
 
@@ -183,7 +197,6 @@ void gen(Node *node) {
   }
 
   if (node->ty == '=') {
-    printf("# assignment\n");
     gen_lval(node->lhs);
     gen(node->rhs);
 
@@ -217,7 +230,6 @@ void gen(Node *node) {
 }
 
 void tokenize(char *p) {
-  int i = 0;
   while (*p) {
     if (isspace(*p)) {
       p++;
@@ -229,16 +241,15 @@ void tokenize(char *p) {
       token->ty = *p;
       token->input = p;
       vec_push(tokens, token);
-      i++;
       p++;
       continue;
     }
 
     if ('a' <= *p && *p <= 'z') {
       token->ty = TK_IDENT;
-      token->input = *p;
+      token->input = malloc(sizeof(char) * 2);
+      sprintf(token->input, "%c\0", *p);
       vec_push(tokens, token);
-      i++;
       p++;
       continue;
     }
@@ -248,7 +259,6 @@ void tokenize(char *p) {
       token->input = p;
       token->val = strtol(p, &p, 10);
       vec_push(tokens, token);
-      i++;
       continue;
     }
 
@@ -273,6 +283,7 @@ int main(int argc, char **argv) {
     return 0;
   }
 
+  variables = new_map();
   tokens = new_vector();
   tokenize(argv[1]);
   program();
@@ -289,7 +300,7 @@ int main(int argc, char **argv) {
   printf("\n# function prolog\n");
   printf("  push rbp\n");
   printf("  mov rbp, rsp\n");
-  printf("  sub rsp, 208\n");
+  printf("  sub rsp, %d\n", variables->keys->len * 8);
 
   for (int i = 0; code[i]; i++) {
     printf("\n# statement: %d\n", i);
