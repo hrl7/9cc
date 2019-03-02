@@ -25,7 +25,9 @@ void tokenize(char *p) {
       continue;
     }
 
-    if (*p == '+' || *p == '-' || *p == '*' || *p == '/' || *p == '(' || *p == ')' || *p == '=' || *p == ';') {
+    if (*p == '+' || *p == '-' || *p == '*' || *p == '/' ||
+        *p == '(' || *p == ')' || *p == '=' || *p == ';' ||
+        *p == '{' || *p == '}') {
       token->ty = *p;
       token->input = p;
       vec_push(tokens, token);

@@ -15,6 +15,18 @@ Node *new_node_num(int val) {
   return node;
 }
 
+Node *new_node_fn_call(char *name) {
+  Node *node = malloc(sizeof(Node));
+  node->ty = ND_FN_CALL;
+  node->name = malloc(sizeof(char) * (strlen(name) + 1));
+  node->name = name;
+  if (!map_get(variables, name)) {
+    // TODO: replace latter "name" with Type annotation
+    map_put(variables, name, name);
+  }
+  return node;
+}
+
 Node *new_node_ident(char *name) {
   Node *node = malloc(sizeof(Node));
   node->ty = ND_IDENT;
@@ -44,6 +56,11 @@ void error(char *str, char *arg) {
 program: stmt program
 program: e
 
+#fn_def: fn_decl block
+#fn_decl: type ident '()'
+#block: '{' stmt '}'
+#type: "int"
+
 stmt: assign ";"
 
 assign: cmp
@@ -61,9 +78,12 @@ mul: term
 mul: mul "*" term
 mul: mul "/" term
 
+term: "(" add ")"
 term: num
 term: ident
-term: "(" add ")"
+term: fnCall
+
+fn_call: ident '()'
 */
 Node *add() {
   Node *node = mul();
@@ -111,6 +131,12 @@ Node *term() {
 
   if (token->ty == TK_IDENT) {
     char *name = ((Token *)tokens->data[pos++])->input;
+    if (consume('(')) {
+      if (consume(')')) {
+        return new_node_fn_call(name);
+      }
+      error("no corresponding close paren %s", token->input);
+    }
     return new_node_ident(name);
   }
 

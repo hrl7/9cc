@@ -25,6 +25,11 @@ void gen(Node *node) {
     return;
   }
 
+  if (node->ty == ND_FN_CALL) {
+    printf("  call %s\n", node->name);
+    return;
+  }
+
   if (node->ty == '=') {
     gen_lval(node->lhs);
     gen(node->rhs);
