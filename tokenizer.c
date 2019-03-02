@@ -17,11 +17,17 @@ void tokenize(char *p) {
     }
 
     if ('a' <= *p && *p <= 'z') {
+      char *sp = p;
+      while ('a' <= *p && *p <= 'z') {
+        p++;
+      }
+      int width = p - sp + 1; // last 1 for \0
+      char *name = malloc(sizeof(char) * width);
+      strncpy(name, sp, width);
+      name[width - 1] = '\0';
       token->ty = TK_IDENT;
-      token->input = malloc(sizeof(char) * 2);
-      sprintf(token->input, "%c\0", *p);
+      token->input = name;
       vec_push(tokens, token);
-      p++;
       continue;
     }
 
