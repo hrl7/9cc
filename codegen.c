@@ -26,6 +26,14 @@ void gen(Node *node) {
   }
 
   if (node->ty == ND_FN_CALL) {
+    if (node->args != NULL) {
+      int num_args = node->args->len;
+      Node *arg_node;
+      for (int i = num_args - 1; i >= 0; i--) {
+        arg_node = node->args->data[i];
+        gen(arg_node);
+      }
+    }
     printf("  call %s\n", node->name);
     return;
   }

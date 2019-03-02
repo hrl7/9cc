@@ -31,7 +31,8 @@ typedef struct Node {
   struct Node *lhs;
   struct Node *rhs;
   int val;
-  char *name;
+  char *name; // IDENT, FN_CALL function name
+  struct Vector *args; // Vector of Node for FN_CALL
 } Node;
 
 typedef struct Vector {

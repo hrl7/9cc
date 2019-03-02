@@ -36,4 +36,5 @@ try 0 "10 != 10;"
 try 1 "10 != 9;"
 try 2 "a = 0; b = 0; c = a == b; c + 1; "
 try 0 "foo();"
+try 3 "bar(3,4);"
 echo OK

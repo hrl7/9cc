@@ -15,11 +15,13 @@ Node *new_node_num(int val) {
   return node;
 }
 
-Node *new_node_fn_call(char *name) {
+Node *new_node_fn_call(char *name, Vector *arguments) {
   Node *node = malloc(sizeof(Node));
   node->ty = ND_FN_CALL;
   node->name = malloc(sizeof(char) * (strlen(name) + 1));
   node->name = name;
+  node->args = malloc(sizeof(Vector));
+  node->args = arguments;
   if (!map_get(variables, name)) {
     // TODO: replace latter "name" with Type annotation
     map_put(variables, name, name);
@@ -83,7 +85,12 @@ term: num
 term: ident
 term: fnCall
 
-fn_call: ident '()'
+fn_call: ident '(' args ')'
+
+args: e
+args: add
+args: add ',' add
+
 */
 Node *add() {
   Node *node = mul();
@@ -113,6 +120,23 @@ Node *mul() {
   }
 }
 
+Vector *args() {
+  if (((Token *)tokens->data[pos])->ty == ')') {
+    pos++;
+    return NULL;
+  }
+  Vector *arguments = new_vector();
+  Node *node = add();
+  vec_push(arguments, node);
+  while(consume(',')) {
+    vec_push(arguments, add());
+  }
+  if (consume(')')) {
+    return arguments;
+  }
+  error("no corresponding close paren %s", ((Token *)tokens->data[pos])->input);
+}
+
 Node *term() {
   if (consume('(')) {
     Node *node = add();
@@ -132,10 +156,8 @@ Node *term() {
   if (token->ty == TK_IDENT) {
     char *name = ((Token *)tokens->data[pos++])->input;
     if (consume('(')) {
-      if (consume(')')) {
-        return new_node_fn_call(name);
-      }
-      error("no corresponding close paren %s", token->input);
+      return new_node_fn_call(name, args());
+      //error("no corresponding close paren %s", token->input);
     }
     return new_node_ident(name);
   }

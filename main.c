@@ -15,6 +15,7 @@ int main(int argc, char **argv) {
     return 0;
   }
 
+  printf("# src => %s\n", argv[1]);
   variables = new_map();
   tokens = new_vector();
   tokenize(argv[1]);
