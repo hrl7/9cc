@@ -76,15 +76,15 @@ void error(int line, char *str, char *arg) {
 }
 
 /*
-program: fn_decl program
-program: stmt program
 program: e
+program: fn_decl program
 
 #fn_def: fn_decl block
 #block: '{' stmt '}'
 #type: "int"
 
-stmt: assign ";"
+stmt: e
+stmt: assign ";" stmt
 
 fn_decl: ident '(' formal_args ')' '{' stmt '}'
 
@@ -210,12 +210,15 @@ Node *assign() {
   return node;
 }
 
-Node *stmt() {
-  Node *node = assign();
-  if (!consume(';')) {
-    error(__LINE__, "expected token ';', got %s", current_token()->input);
+Vector *stmt() {
+  Vector *stmts = new_vector();
+  while(current_token()->ty != '}') {
+    vec_push(stmts, assign());
+    if (!consume(';')) {
+      error(__LINE__, "expected token ';', got %s", current_token()->input);
+    }
   }
-  return node;
+  return stmts;
 }
 
 Vector *formal_args() {
@@ -252,29 +255,21 @@ Node *fn_decl() {
   if (fn_name != NULL && current_token()->ty == '(') {
     Node *args = formal_args();
     if (consume('{')) {
-      Node *body = new_vector();
-      vec_push(body, stmt());
+      Vector *body = stmt();
       if (consume('}')) {
         return new_node_fn_decl(fn_name->name, args, body);
       }
       error(__LINE__, "no corresponding closing brace %s", current_token()->input);
     }
   }
-  // if it's not fn_decl, rewind the token position
-  // perhaps I should implement peek function
-  pos = last_pos;
-  return NULL;
+  error(__LINE__, "no corresponding closing paren %s", current_token()->input);
 }
 
 void program() {
   int i = 0;
   Token *token = tokens->data[pos];
   while (token->ty != TK_EOF) {
-    code[i] = fn_decl();
-    if (code[i] == NULL) {
-      code[i] = stmt();
-    }
-    i++;
+    code[i++] = fn_decl();
     token = tokens->data[pos];
   }
   code[i] = NULL;

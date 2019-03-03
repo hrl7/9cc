@@ -51,7 +51,7 @@ typedef struct Map {
 Node *add();
 Node *mul();
 Node *term();
-Node *stmt();
+Vector *stmt();
 Node *ident();
 Vector *formal_args();
 Vector *actual_args();

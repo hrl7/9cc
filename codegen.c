@@ -17,9 +17,9 @@ void gen_fn_decl(Node *node) {
     printf("  mov rbp, rsp\n");
 
     Vector *args = node->args;
-    printf("  sub rsp, %d\n", args->len * 8);
+    int num_args = args == NULL ? 0 : args->len;
+    printf("  sub rsp, %d\n", num_args * 8);
     if (args != NULL) {
-      int num_args = args->len;
       Node *arg_node;
       for (int i = 0; i < num_args; i++) {
         arg_node = args->data[i];

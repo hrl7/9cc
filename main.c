@@ -22,32 +22,28 @@ int main(int argc, char **argv) {
   program();
 
   printf(".intel_syntax noprefix\n");
+#ifdef __APPLE__
+  printf(".global _main\n");
+#else
+  printf(".global main\n");
+#endif
 
   for (int i = 0; code[i]; i++) {
     gen_fn_decl(code[i]);
   }
 
-#ifdef __APPLE__
-  printf(".global _main\n");
-  printf("_main:\n");
-#else
-  printf(".global main\n");
-  printf("main:\n");
-#endif
+/*
 
   printf("\n# function prologue\n");
   printf("  push rbp\n");
   printf("  mov rbp, rsp\n");
   printf("  sub rsp, %d\n", variables->keys->len * 8);
 
-  for (int i = 0; code[i]; i++) {
-    printf("\n# statement: %d\n", i);
-    gen(code[i]);
-  }
 
   printf("\n# function epilogue\n");
   printf("  mov rsp, rbp\n");
   printf("  pop rbp\n");
   printf("  ret\n");
+  */
   return 0;
 }
