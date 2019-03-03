@@ -32,6 +32,12 @@ void gen(Node *node) {
       for (int i = num_args - 1; i >= 0; i--) {
         arg_node = node->args->data[i];
         gen(arg_node);
+        if (i == 0) printf("  mov rdi, [rsp] # 1st arg\n");
+        if (i == 1) printf("  mov rsi, [rsp] # 2nd arg\n");
+        if (i == 2) printf("  mov rdx, [rsp] # 3rd arg\n");
+        if (i == 3) printf("  mov rcx, [rsp] # 4th arg\n");
+        if (i == 4) printf("  mov r8, [rsp] # 5th arg\n");
+        if (i == 5) printf("  mov r9, [rsp] # 6th arg\n");
       }
     }
     printf("  call %s\n", node->name);
