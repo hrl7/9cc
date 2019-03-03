@@ -24,6 +24,7 @@ enum {
   ND_EQ,
   ND_NEQ,
   ND_FN_CALL,
+  ND_FN_DECL,
 };
 
 typedef struct Node {
@@ -32,7 +33,8 @@ typedef struct Node {
   struct Node *rhs;
   int val;
   char *name; // IDENT, FN_CALL function name
-  struct Vector *args; // Vector of Node for FN_CALL
+  struct Vector *args; // Vector of Node for FN_CALL, FN_DECL
+  struct Vecotr *body // Vector of Node for FN_DECL
 } Node;
 
 typedef struct Vector {
@@ -50,6 +52,9 @@ Node *add();
 Node *mul();
 Node *term();
 Node *stmt();
+Node *ident();
+Vector *formal_args();
+Vector *actual_args();
 void program();
 
 Node *new_node(int ty, Node *lhs, Node *rhs);

@@ -29,6 +29,20 @@ Node *new_node_fn_call(char *name, Vector *arguments) {
   return node;
 }
 
+Node *new_node_fn_decl(char *name,Vector *formal_args, Vector *body) {
+  Node *node = malloc(sizeof(Node));
+  node->ty = ND_FN_DECL;
+  node->name = malloc(sizeof(char) * (strlen(name) + 1));
+  node->name = name;
+  if (formal_args) {
+    node->args = formal_args;
+  }
+  if (body) {
+    node->body = body;
+  }
+  return node;
+}
+
 Node *new_node_ident(char *name) {
   Node *node = malloc(sizeof(Node));
   node->ty = ND_IDENT;
@@ -48,22 +62,35 @@ int consume(int ty) {
   return 1;
 }
 
-void error(char *str, char *arg) {
-  printf(str);
+Token *current_token() {
+  return (Token *)tokens->data[pos];
+}
+
+void error(int line, char *str, char *arg) {
   fprintf(stderr, str, arg);
+  printf(str, arg);
+  Token *token = tokens->data[pos];
+  fprintf(stderr, "\n%d:, pos: %d, token-type: %c %d\n",line, pos, token->ty, token->ty);
+  printf("\n%d: pos: %d, token-type: %c %d\n",line, pos, token->ty, token->ty);
   exit(1);
 }
 
 /*
+program: fn_decl program
 program: stmt program
 program: e
 
 #fn_def: fn_decl block
-#fn_decl: type ident '()'
 #block: '{' stmt '}'
 #type: "int"
 
 stmt: assign ";"
+
+fn_decl: ident '(' formal_args ')' '{' stmt '}'
+
+formal_args: e
+formal_args: ident
+formal_args: ident ',' ident
 
 assign: cmp
 assign: add "=" assign
@@ -120,7 +147,7 @@ Node *mul() {
   }
 }
 
-Vector *args() {
+Vector *actual_args() {
   if (((Token *)tokens->data[pos])->ty == ')') {
     pos++;
     return NULL;
@@ -134,7 +161,7 @@ Vector *args() {
   if (consume(')')) {
     return arguments;
   }
-  error("no corresponding close paren %s", ((Token *)tokens->data[pos])->input);
+  error(__LINE__, "no corresponding close paren %s", ((Token *)tokens->data[pos])->input);
 }
 
 Node *term() {
@@ -142,7 +169,7 @@ Node *term() {
     Node *node = add();
     if (!consume(')')) {
       Token *token = tokens->data[pos];
-      error("no corresponding close paren %s", token->input);
+      error(__LINE__, "no corresponding close paren %s", token->input);
     }
     return node;
   }
@@ -156,13 +183,13 @@ Node *term() {
   if (token->ty == TK_IDENT) {
     char *name = ((Token *)tokens->data[pos++])->input;
     if (consume('(')) {
-      return new_node_fn_call(name, args());
+      return new_node_fn_call(name, actual_args());
       //error("no corresponding close paren %s", token->input);
     }
     return new_node_ident(name);
   }
 
-  error("invalid token: %s", token->input);
+  error(__LINE__, "invalid token: %s", token->input);
 }
 
 Node *cmp() {
@@ -186,17 +213,68 @@ Node *assign() {
 Node *stmt() {
   Node *node = assign();
   if (!consume(';')) {
-    Token *token = tokens->data[pos];
-    error("expected token ';', got %s", token->input);
+    error(__LINE__, "expected token ';', got %s", current_token()->input);
   }
   return node;
+}
+
+Vector *formal_args() {
+  if (consume('(')) {
+    if (current_token()->ty == ')') {
+      pos++;
+      return NULL;
+    }
+    Vector *arguments = new_vector();
+    vec_push(arguments, ident());
+    while(consume(',')) {
+      vec_push(arguments, add());
+    }
+    if (consume(')')) {
+      return arguments;
+    }
+    //error(__LINE__, "no corresponding close paren %s", current_token()->input);
+  }
+  return NULL;
+}
+
+Node *ident() {
+  Token *token = tokens->data[pos];
+  if (token->ty == TK_IDENT) {
+    char *name = ((Token *)tokens->data[pos++])->input;
+    return new_node_ident(name);
+  }
+  return NULL;
+}
+
+Node *fn_decl() {
+  int last_pos = pos;
+  Node *fn_name = ident();
+  if (fn_name != NULL && current_token()->ty == '(') {
+    Node *args = formal_args();
+    if (consume('{')) {
+      Node *body = new_vector();
+      vec_push(body, stmt());
+      if (consume('}')) {
+        return new_node_fn_decl(fn_name->name, args, body);
+      }
+      error(__LINE__, "no corresponding closing brace %s", current_token()->input);
+    }
+  }
+  // if it's not fn_decl, rewind the token position
+  // perhaps I should implement peek function
+  pos = last_pos;
+  return NULL;
 }
 
 void program() {
   int i = 0;
   Token *token = tokens->data[pos];
   while (token->ty != TK_EOF) {
-    code[i++] = stmt();
+    code[i] = fn_decl();
+    if (code[i] == NULL) {
+      code[i] = stmt();
+    }
+    i++;
     token = tokens->data[pos];
   }
   code[i] = NULL;

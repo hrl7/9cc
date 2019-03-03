@@ -37,4 +37,8 @@ try 1 "10 != 9;"
 try 2 "a = 0; b = 0; c = a == b; c + 1; "
 try 0 "foo();"
 try 7 "bar(3,4);"
+try 10 "add(a, b) { a + b; } add(8, 2);"
+try 6 "sub(a, b) { a - b; } sub(8, 2);"
+try 10 "sub(a, b) { a - b; } x = sub(8, 2);x + 4;"
+try 0 "sub(a, b) { a - b; } add(a, b) { a + b; } x = add(8, 2); sub(x, 10);"
 echo OK

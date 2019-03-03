@@ -4,14 +4,52 @@ void gen_lval(Node *node) {
   if (node->ty != ND_IDENT) {
     error("left value is not variable", node->ty);
   }
-
   int offset = map_get_index(variables, node->name) * 8;
   printf("  mov rax, rbp\n");
   printf("  sub rax, %d # var %s\n", offset, node->name);
   printf("  push rax\n");
 }
 
+void gen_fn_decl(Node *node) {
+  if (node->ty == ND_FN_DECL) {
+    printf("%s:\n", node->name);
+    printf("  push rbp\n");
+    printf("  mov rbp, rsp\n");
+
+    Vector *args = node->args;
+    printf("  sub rsp, %d\n", args->len * 8);
+    if (args != NULL) {
+      int num_args = args->len;
+      Node *arg_node;
+      for (int i = 0; i < num_args; i++) {
+        arg_node = args->data[i];
+        if (i == 0) printf("  mov [rbp-8], rdi # 1st arg\n");
+        if (i == 1) printf("  mov [rbp-16], rsi # 2nd arg\n");
+        if (i == 2) printf("  mov [rbp-24], rdx # 3rd arg\n");
+        if (i == 3) printf("  mov [rbp-32], rcx # 4th arg\n");
+        if (i == 4) printf("  mov [rbp-40], r8 # 5th arg\n");
+        if (i == 5) printf("  mov [rbp-48], r9 # 6th arg\n");
+      }
+    }
+
+    Vector *body = node->body;
+    if (body != NULL) {
+      for (int i = 0; i < body->len; i++) {
+        printf("# in function %s, statement: %d\n", node->name, i);
+        gen(body->data[i]);
+      }
+    }
+    printf("  mov rsp, rbp\n");
+    printf("  pop rbp # fn epilogue\n");
+    printf("  ret\n\n");
+    return;
+  }
+}
+
 void gen(Node *node) {
+  if (node->ty == ND_FN_DECL) {
+    return;
+  }
   if (node->ty == ND_NUM) {
     printf("  push %d\n", node->val);
     return;
@@ -26,8 +64,9 @@ void gen(Node *node) {
   }
 
   if (node->ty == ND_FN_CALL) {
+    int num_args = 0;
     if (node->args != NULL) {
-      int num_args = node->args->len;
+      num_args = node->args->len;
       Node *arg_node;
       for (int i = num_args - 1; i >= 0; i--) {
         arg_node = node->args->data[i];
@@ -41,17 +80,19 @@ void gen(Node *node) {
       }
     }
     printf("  call %s\n", node->name);
+    printf("  add rsp, %d # finish fn call\n", num_args * 8);
+    printf("  push rax\n");
     return;
   }
 
   if (node->ty == '=') {
     gen_lval(node->lhs);
     gen(node->rhs);
-
     printf("  pop rdi\n");
     printf("  pop rax\n");
     printf("  mov [rax], rdi\n");
     printf("  push rdi\n");
+    return;
   }
 
   gen(node->lhs);
