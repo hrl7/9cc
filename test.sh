@@ -95,4 +95,8 @@ show_title while
 try 10 "main() { i = 0; while(i != 10) { i = i + 1; } i; }"
 try 66 "main() { sum = 0; i = 0; while(i <= 10) { i = i + 1; sum = sum + i;  } sum; }"
 
+show_title recursion
+try 6 "fact(n){res=0;if(n>0){res=n*fact(n-1);}else{res=1;}res;} main(){fact(3);}"
+try 120 "fact(n){res=0;if(n>0){res=n*fact(n-1);}else{res=1;}res;} main(){fact(5);}"
+
 echo OK
