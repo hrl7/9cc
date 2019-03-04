@@ -1,6 +1,7 @@
 #include "9cc.h"
 
 int pos;
+int branch_id = 0;
 Vector *tokens;
 Node *code[100];
 Map *variables;

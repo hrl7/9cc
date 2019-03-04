@@ -40,5 +40,27 @@ try 7 "main(){bar(3,4);}"
 try 10 "add(a, b) { a + b; } main() {add(8, 2);}"
 try 6 "sub(a, b) { a - b; } main() {sub(8, 2);}"
 try 10 "sub(a, b) { a - b; } main(){x = sub(8, 2);x + 4;}"
-try 0 "sub(a, b) { a - b; } add(a, b) { a + b; } main(){x = add(8, 2); sub(x, 10);}"
+try 0 "\
+sub(a, b) { \
+  a - b; \
+} \
+add(a, b) { \
+  a + b; \
+} \
+main() {\
+  x = add(8, 2); \
+  sub(x, 10); \
+}"
+
+try 1 "main() { b=1;if (1 == 0) b = 0 ; b; }"
+try 0 "main() { b=1;if (0 == 0) b = 0 ; b; }"
+try 0 "main() { b=1;if (1 != 0) b = 0 ; b; }"
+try 1 "main() { b=1;if (0 != 0) b = 0 ; b; }"
+
+try 1 "main() { b=1;if (1 == 0) {b = 0;} b; }"
+try 0 "main() { b=1;if (0 == 0) {b = 0;} b; }"
+
+try 1 "main() { b=1;if (1 == 0) {b = 0;} b; }"
+try 0 "main() { b=1;if (0 == 0) {b = 0;} b; }"
+
 echo OK

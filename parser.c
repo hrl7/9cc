@@ -55,16 +55,32 @@ Node *new_node_ident(char *name) {
   return node;
 }
 
-int consume(int ty) {
-  Token *token = tokens->data[pos];
-  if (token->ty != ty) return 0;
-  pos++;
-  return 1;
+Node *new_node_if_stmt(Node *cond, Vector *body, Vector *else_clause) {
+  Node *node = malloc(sizeof(Node));
+  node->ty = ND_IF;
+  node->cond = cond;
+  node->body = body;
+  node->els = else_clause;
+  return node;
 }
 
 Token *current_token() {
   return (Token *)tokens->data[pos];
 }
+
+int consume(int ty) {
+  if (current_token()->ty != ty) return 0;
+  pos++;
+  return 1;
+}
+
+int consume_keyword(const char *keyword) {
+  Token *token = current_token();
+  if (token->ty != TK_IDENT || strcmp(token->input, keyword)) return 0;
+  pos++;
+  return 1;
+}
+
 
 void error(int line, char *str, char *arg) {
   fprintf(stderr, str, arg);
@@ -84,7 +100,13 @@ program: fn_decl program
 #type: "int"
 
 stmt: e
+stmt: if_stmt stmt
 stmt: assign ";" stmt
+
+if_stmt: 'if' '(' assign ')' assign ';'
+if_stmt: 'if' '(' assign ')' '{' stmt '}'
+if_stmt: 'if' '(' assign ')' '{' stmt '}' 'else' assgin ';'
+if_stmt: 'if' '(' assign ')' '{' stmt '}' 'else' '{' stmt '}'
 
 fn_decl: ident '(' formal_args ')' '{' stmt '}'
 
@@ -210,12 +232,35 @@ Node *assign() {
   return node;
 }
 
+Node *if_stmt() {
+  if (consume_keyword("if")) {
+    if (!consume('(')) error(__LINE__, "expected '(', got token: %c", current_token()->input[0]);
+    Node *cond = assign();
+    if (!consume(')')) error(__LINE__, "expected ')', got token: %c", current_token()->input[0]);
+
+    Vector *body;
+    if (consume('{')) {
+      body = stmt();
+      if (!consume('}')) error(__LINE__, "expected '}', got token: %c", current_token()->input[0]);
+    } else {
+      body = new_vector();
+      vec_push(body, assign());
+      if (!consume(';')) error(__LINE__, "expected ';', got token: %c", current_token()->input[0]);
+    }
+    return new_node_if_stmt(cond, body, NULL);
+  }
+  return NULL;
+}
+
 Vector *stmt() {
   Vector *stmts = new_vector();
   while(current_token()->ty != '}') {
-    vec_push(stmts, assign());
-    if (!consume(';')) {
-      error(__LINE__, "expected token ';', got %s", current_token()->input);
+    Node *node = if_stmt();
+    if (node == NULL) {
+      vec_push(stmts, assign());
+      if (!consume(';')) error(__LINE__, "expected token ';', got %s", current_token()->input);
+    } else {
+      vec_push(stmts, node);
     }
   }
   return stmts;

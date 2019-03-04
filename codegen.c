@@ -63,6 +63,19 @@ void gen(Node *node) {
     return;
   }
 
+  if (node->ty == ND_IF) {
+    gen(node->cond);
+    printf("  pop rax\n");
+    printf("  cmp rax, 1\n");
+    printf("  jne .L%d\n", branch_id);
+    Vector *body = node->body;
+    for (int i = 0; i < body->len; i++) {
+      gen(body->data[i]);
+    }
+    printf(".L%d:\n", branch_id);
+    return;
+  }
+
   if (node->ty == ND_FN_CALL) {
     int num_args = 0;
     if (node->args != NULL) {

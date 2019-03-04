@@ -25,6 +25,7 @@ enum {
   ND_NEQ,
   ND_FN_CALL,
   ND_FN_DECL,
+  ND_IF,
 };
 
 typedef struct Node {
@@ -34,7 +35,9 @@ typedef struct Node {
   int val;
   char *name; // IDENT, FN_CALL function name
   struct Vector *args; // Vector of Node for FN_CALL, FN_DECL
-  struct Vecotr *body // Vector of Node for FN_DECL
+  struct Vecotr *body; // Vector of Node for FN_DECL
+  struct Node *cond; // Condition for ND_IF
+  struct Vector *els; // else clause for ND_IF
 } Node;
 
 typedef struct Vector {
@@ -73,5 +76,6 @@ void runtest();
 
 extern Map *variables;
 extern int pos;
+extern int branch_id;
 extern Node *code[100];
 extern Vector *tokens;
