@@ -78,29 +78,29 @@ main() {\
 }"
 
 show_title if-else
-try 1 "main() { b=1;if (1 == 0) b = 0 ; b; }"
-try 0 "main() { b=1;if (0 == 0) b = 0 ; b; }"
+try 1 "main() { b=1;if (1 == 0) b = 0 ; return b; }"
+try 0 "main() { b=1;if (0 == 0) b = 0 ; return b; }"
 
-try 0 "main() { b=1;if (1 != 0) b = 0 ; else b = 2; b; }"
-try 2 "main() { b=1;if (0 != 0) b = 0 ; else b = 2; b; }"
+try 0 "main() { b=1;if (1 != 0) b = 0 ; else b = 2; return b; }"
+try 2 "main() { b=1;if (0 != 0) b = 0 ; else b = 2; return b; }"
 
-try 1 "main() { b=1;if (1 == 0) {b = 0;} b; }"
-try 0 "main() { b=1;if (0 == 0) {b = 0;} b; }"
-try 2 "main() { b=1;if (0 == 0) {b = 0; if (b == 0) {b = 2;}} b; }"
+try 1 "main() { b=1;if (1 == 0) {b = 0;} return b; }"
+try 0 "main() { b=1;if (0 == 0) {b = 0;} return b; }"
+try 2 "main() { b=1;if (0 == 0) {b = 0; if (b == 0) {b = 2;}} return b; }"
 
-try 0 "main() { b=1;if (1 != 0) b = 0 ; else { b = 2; } b; }"
-try 2 "main() { b=1;if (0 != 0) b = 0 ; else { b = 2; } b; }"
+try 0 "main() { b=1;if (1 != 0) b = 0 ; else { b = 2; } return b; }"
+try 2 "main() { b=1;if (0 != 0) b = 0 ; else { b = 2; } return b; }"
 
-show_title while
-try 10 "main() { i = 0; while(i != 10) { i = i + 1; } i; }"
-try 66 "main() { sum = 0; i = 0; while(i <= 10) { i = i + 1; sum = sum + i;  } sum; }"
+show_title while-loop
+try 10 "main() { i = 0; while(i != 10) { i = i + 1; } return i; }"
+try 66 "main() { sum = 0; i = 0; while(i <= 10) { i = i + 1; sum = sum + i;  } return sum; }"
 
 show_title for-loop
-try 55 "main() { i = 0; sum = 0; for(i=0; i <=10; i = i + 1) { sum = sum + i; } sum; }"
-try 55 "main() { i = 0; sum = 0; for(i=10;i >= 0; i = i - 1) { sum = sum + i; } sum; }"
+try 55 "main() { i = 0; sum = 0; for(i=0; i <=10; i = i + 1) { sum = sum + i; } return sum; }"
+try 55 "main() { i = 0; sum = 0; for(i=10;i >= 0; i = i - 1) { sum = sum + i; } return sum; }"
 
 show_title recursion
-try 6 "fact(n){res=0;if(n>0){res=n*fact(n-1);}else{res=1;}res;} main(){fact(3);}"
-try 120 "fact(n){res=0;if(n>0){res=n*fact(n-1);}else{res=1;}res;} main(){fact(5);}"
+try 6 "fact(n){if(n>0){return n*fact(n-1);}else{return 1;}} main(){return fact(3);}"
+try 120 "fact(n){if(n>0){return n*fact(n-1);}else{return 1;}} main(){return fact(5);}"
 
 echo OK

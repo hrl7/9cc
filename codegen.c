@@ -169,6 +169,15 @@ void gen(Node *node) {
     return;
   }
 
+  if (node->ty == ND_RET) {
+    gen(node->body);
+    printf("  pop rax\n");
+    printf("  mov rsp, rbp\n");
+    printf("  pop rbp # fn epilogue\n");
+    printf("  ret\n\n");
+    return;
+  }
+
   if (node->ty == '=') {
     gen_lval(node->lhs);
     gen(node->rhs);

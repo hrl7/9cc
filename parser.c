@@ -82,6 +82,13 @@ Node *new_node_for_stmt(Node *init, Node *cond, Node *updater, Vector *body) {
   return node;
 }
 
+Node *new_node_ret(Node *body) {
+  Node *node = malloc(sizeof(Node));
+  node->ty = ND_RET;
+  node->body = body;
+  return node;
+}
+
 Token *current_token() {
   return (Token *)tokens->data[pos];
 }
@@ -126,6 +133,7 @@ program: fn_decl program
 stmt: e
 stmt: if_stmt stmt
 stmt: while_stmt stmt
+stmt: 'return' assign ";" stmt
 stmt: assign ";" stmt
 
 if_stmt: 'if' '(' assign ')' assign ';'
@@ -340,6 +348,15 @@ Node *for_stmt() {
   return NULL;
 }
 
+Node *ret() {
+  if (consume_keyword("return")) {
+    Node *node = assign();
+    consume_and_assert(__LINE__, ';');
+    return new_node_ret(node);
+  }
+  return NULL;
+}
+
 Vector *stmt() {
   Vector *stmts = new_vector();
   while(current_token()->ty != '}') {
@@ -358,6 +375,12 @@ Vector *stmt() {
     }
 
     node = for_stmt();
+    if (node != NULL) {
+      vec_push(stmts, node);
+      continue;
+    }
+
+    node = ret();
     if (node != NULL) {
       vec_push(stmts, node);
       continue;

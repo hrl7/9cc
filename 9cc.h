@@ -34,6 +34,7 @@ enum {
   ND_IF,
   ND_WHILE,
   ND_FOR,
+  ND_RET,
 };
 
 typedef struct Node {
