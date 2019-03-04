@@ -98,6 +98,7 @@ void gen(Node *node) {
   if (node->ty == ND_WHILE) {
     int cond_label_id = branch_id++;
     int body_label_id = branch_id++;
+    printf("  jmp .L%d\n", cond_label_id);
     printf(".L%d: # while-body\n", body_label_id);
     Vector *body = node->body;
     for (int i = 0; i < body->len; i++) {

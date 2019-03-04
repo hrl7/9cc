@@ -93,5 +93,6 @@ try 2 "main() { b=1;if (0 != 0) b = 0 ; else { b = 2; } b; }"
 
 show_title while
 try 10 "main() { i = 0; while(i != 10) { i = i + 1; } i; }"
+try 66 "main() { sum = 0; i = 0; while(i <= 10) { i = i + 1; sum = sum + i;  } sum; }"
 
 echo OK
