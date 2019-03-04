@@ -67,12 +67,31 @@ void gen(Node *node) {
     gen(node->cond);
     printf("  pop rax\n");
     printf("  cmp rax, 1\n");
-    printf("  jne .L%d\n", branch_id);
+    int end_label_id = branch_id++;
+    int else_label_id;
+
+    if (node->els != NULL ) {
+      else_label_id = branch_id++;
+      printf("  jne .L%d # jump to else clause\n", else_label_id);
+    } else {
+      printf("  jne .L%d # jump to end if\n", end_label_id);
+    }
+
     Vector *body = node->body;
     for (int i = 0; i < body->len; i++) {
       gen(body->data[i]);
     }
-    printf(".L%d:\n", branch_id);
+
+    if (node->els != NULL && node->els->len > 0) {
+      printf("  jmp .L%d # jump to end clause\n", end_label_id);
+      Vector *els = node->els;
+      printf(".L%d: # else clause\n", else_label_id);
+      for (int i = 0; i < els->len; i++) {
+        gen(els->data[i]);
+      }
+    }
+
+    printf(".L%d: # end if clause\n", end_label_id);
     return;
   }
 

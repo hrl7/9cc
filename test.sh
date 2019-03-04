@@ -54,13 +54,14 @@ main() {\
 
 try 1 "main() { b=1;if (1 == 0) b = 0 ; b; }"
 try 0 "main() { b=1;if (0 == 0) b = 0 ; b; }"
-try 0 "main() { b=1;if (1 != 0) b = 0 ; b; }"
-try 1 "main() { b=1;if (0 != 0) b = 0 ; b; }"
+
+try 0 "main() { b=1;if (1 != 0) b = 0 ; else b = 2; b; }"
+try 2 "main() { b=1;if (0 != 0) b = 0 ; else b = 2; b; }"
 
 try 1 "main() { b=1;if (1 == 0) {b = 0;} b; }"
 try 0 "main() { b=1;if (0 == 0) {b = 0;} b; }"
 
-try 1 "main() { b=1;if (1 == 0) {b = 0;} b; }"
-try 0 "main() { b=1;if (0 == 0) {b = 0;} b; }"
+try 0 "main() { b=1;if (1 != 0) b = 0 ; else { b = 2; } b; }"
+try 2 "main() { b=1;if (0 != 0) b = 0 ; else { b = 2; } b; }"
 
 echo OK

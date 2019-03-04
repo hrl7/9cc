@@ -68,6 +68,12 @@ Token *current_token() {
   return (Token *)tokens->data[pos];
 }
 
+void consume_and_assert(int line, char c) {
+  if (!consume(c)) {
+    error(line, "expected '%c', got token: %c", c, current_token()->input[0]);
+  }
+}
+
 int consume(int ty) {
   if (current_token()->ty != ty) return 0;
   pos++;
@@ -234,20 +240,32 @@ Node *assign() {
 
 Node *if_stmt() {
   if (consume_keyword("if")) {
-    if (!consume('(')) error(__LINE__, "expected '(', got token: %c", current_token()->input[0]);
+    consume_and_assert(__LINE__, '(');
     Node *cond = assign();
-    if (!consume(')')) error(__LINE__, "expected ')', got token: %c", current_token()->input[0]);
+    consume_and_assert(__LINE__, ')');
 
-    Vector *body;
+    Vector *body = NULL;
+    Vector *else_clause = NULL;
     if (consume('{')) {
       body = stmt();
-      if (!consume('}')) error(__LINE__, "expected '}', got token: %c", current_token()->input[0]);
+      consume_and_assert(__LINE__, '}');
     } else {
       body = new_vector();
       vec_push(body, assign());
-      if (!consume(';')) error(__LINE__, "expected ';', got token: %c", current_token()->input[0]);
+      consume_and_assert(__LINE__, ';');
     }
-    return new_node_if_stmt(cond, body, NULL);
+
+    if (consume_keyword("else")) {
+      if (consume('{')) {
+        else_clause = stmt();
+        consume_and_assert(__LINE__, '}');
+      } else {
+        else_clause = new_vector();
+        vec_push(else_clause, assign());
+        consume_and_assert(__LINE__, ';');
+      }
+    }
+    return new_node_if_stmt(cond, body, else_clause);
   }
   return NULL;
 }
