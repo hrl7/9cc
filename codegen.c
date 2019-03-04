@@ -95,6 +95,22 @@ void gen(Node *node) {
     return;
   }
 
+  if (node->ty == ND_WHILE) {
+    int cond_label_id = branch_id++;
+    int body_label_id = branch_id++;
+    printf(".L%d: # while-body\n", body_label_id);
+    Vector *body = node->body;
+    for (int i = 0; i < body->len; i++) {
+      gen(body->data[i]);
+    }
+    printf(".L%d: # while-cond\n", cond_label_id);
+    gen(node->cond);
+    printf("  pop rax\n");
+    printf("  cmp rax, 1\n");
+    printf("  je .L%d # jump to while-body\n", body_label_id);
+    return;
+  }
+
   if (node->ty == ND_FN_CALL) {
     int num_args = 0;
     if (node->args != NULL) {

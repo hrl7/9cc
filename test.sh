@@ -60,8 +60,11 @@ try 2 "main() { b=1;if (0 != 0) b = 0 ; else b = 2; b; }"
 
 try 1 "main() { b=1;if (1 == 0) {b = 0;} b; }"
 try 0 "main() { b=1;if (0 == 0) {b = 0;} b; }"
+try 2 "main() { b=1;if (0 == 0) {b = 0; if (b == 0) {b = 2;}} b; }"
 
 try 0 "main() { b=1;if (1 != 0) b = 0 ; else { b = 2; } b; }"
 try 2 "main() { b=1;if (0 != 0) b = 0 ; else { b = 2; } b; }"
+
+try 10 "main() { i = 0; while(i != 10) { i = i + 1; } i; }"
 
 echo OK

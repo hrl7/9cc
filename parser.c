@@ -64,6 +64,14 @@ Node *new_node_if_stmt(Node *cond, Vector *body, Vector *else_clause) {
   return node;
 }
 
+Node *new_node_while_stmt(Node *cond, Vector *body) {
+  Node *node = malloc(sizeof(Node));
+  node->ty = ND_WHILE;
+  node->cond = cond;
+  node->body = body;
+  return node;
+}
+
 Token *current_token() {
   return (Token *)tokens->data[pos];
 }
@@ -107,12 +115,16 @@ program: fn_decl program
 
 stmt: e
 stmt: if_stmt stmt
+stmt: while_stmt stmt
 stmt: assign ";" stmt
 
 if_stmt: 'if' '(' assign ')' assign ';'
 if_stmt: 'if' '(' assign ')' '{' stmt '}'
 if_stmt: 'if' '(' assign ')' '{' stmt '}' 'else' assgin ';'
 if_stmt: 'if' '(' assign ')' '{' stmt '}' 'else' '{' stmt '}'
+
+while_stmt: 'while' '(' assign ')' assign ';'
+while_stmt: 'while' '(' assign ')' '{' stmt '}'
 
 fn_decl: ident '(' formal_args ')' '{' stmt '}'
 
@@ -212,7 +224,6 @@ Node *term() {
     char *name = ((Token *)tokens->data[pos++])->input;
     if (consume('(')) {
       return new_node_fn_call(name, actual_args());
-      //error("no corresponding close paren %s", token->input);
     }
     return new_node_ident(name);
   }
@@ -270,16 +281,45 @@ Node *if_stmt() {
   return NULL;
 }
 
+Node *while_stmt() {
+  if (consume_keyword("while")) {
+    consume_and_assert(__LINE__, '(');
+    Node *cond = assign();
+    consume_and_assert(__LINE__, ')');
+
+    Vector *body = NULL;
+    if (consume('{')) {
+      body = stmt();
+      consume_and_assert(__LINE__, '}');
+    } else {
+      body = new_vector();
+      vec_push(body, assign());
+      consume_and_assert(__LINE__, ';');
+    }
+    return new_node_while_stmt(cond, body);
+  }
+  return NULL;
+}
+
 Vector *stmt() {
   Vector *stmts = new_vector();
   while(current_token()->ty != '}') {
-    Node *node = if_stmt();
-    if (node == NULL) {
-      vec_push(stmts, assign());
-      if (!consume(';')) error(__LINE__, "expected token ';', got %s", current_token()->input);
-    } else {
+    Node *node;
+
+    node = if_stmt();
+    if (node != NULL) {
       vec_push(stmts, node);
+      continue;
     }
+
+    node = while_stmt();
+    if (node != NULL) {
+      vec_push(stmts, node);
+      continue;
+    }
+
+    vec_push(stmts, assign());
+    consume_and_assert(__LINE__, ';');
   }
   return stmts;
 }

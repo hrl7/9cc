@@ -26,6 +26,7 @@ enum {
   ND_FN_CALL,
   ND_FN_DECL,
   ND_IF,
+  ND_WHILE,
 };
 
 typedef struct Node {
