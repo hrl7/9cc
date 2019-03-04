@@ -46,10 +46,75 @@ void gen_fn_decl(Node *node) {
   }
 }
 
-void gen(Node *node) {
-  if (node->ty == ND_FN_DECL) {
-    return;
+void gen_if(Node *node) {
+  gen(node->cond);
+  printf("  pop rax\n");
+  printf("  cmp rax, 1\n");
+  int end_label_id = branch_id++;
+  int else_label_id;
+
+  if (node->els != NULL ) {
+    else_label_id = branch_id++;
+    printf("  jne .L%d # jump to else clause\n", else_label_id);
+  } else {
+    printf("  jne .L%d # jump to end if\n", end_label_id);
   }
+
+  Vector *body = node->body;
+  for (int i = 0; i < body->len; i++) {
+    gen(body->data[i]);
+  }
+
+  if (node->els != NULL && node->els->len > 0) {
+    printf("  jmp .L%d # jump to end clause\n", end_label_id);
+    Vector *els = node->els;
+    printf(".L%d: # else clause\n", else_label_id);
+    for (int i = 0; i < els->len; i++) {
+      gen(els->data[i]);
+    }
+  }
+
+  printf(".L%d: # end if clause\n", end_label_id);
+}
+
+void gen_while(Node *node) {
+  int cond_label_id = branch_id++;
+  int body_label_id = branch_id++;
+  printf("  jmp .L%d\n", cond_label_id);
+  printf(".L%d: # while-body\n", body_label_id);
+  Vector *body = node->body;
+  for (int i = 0; i < body->len; i++) {
+    gen(body->data[i]);
+  }
+  printf(".L%d: # while-cond\n", cond_label_id);
+  gen(node->cond);
+  printf("  pop rax\n");
+  printf("  cmp rax, 1\n");
+  printf("  je .L%d # jump to while-body\n", body_label_id);
+}
+
+void gen_fn_call(Node *node) {
+  int num_args = 0;
+  if (node->args != NULL) {
+    num_args = node->args->len;
+    Node *arg_node;
+    for (int i = num_args - 1; i >= 0; i--) {
+      arg_node = node->args->data[i];
+      gen(arg_node);
+      if (i == 0) printf("  mov rdi, [rsp] # 1st arg\n");
+      if (i == 1) printf("  mov rsi, [rsp] # 2nd arg\n");
+      if (i == 2) printf("  mov rdx, [rsp] # 3rd arg\n");
+      if (i == 3) printf("  mov rcx, [rsp] # 4th arg\n");
+      if (i == 4) printf("  mov r8, [rsp] # 5th arg\n");
+      if (i == 5) printf("  mov r9, [rsp] # 6th arg\n");
+    }
+  }
+  printf("  call %s\n", node->name);
+  printf("  add rsp, %d # finish fn call\n", num_args * 8);
+  printf("  push rax\n");
+}
+
+void gen(Node *node) {
   if (node->ty == ND_NUM) {
     printf("  push %d\n", node->val);
     return;
@@ -64,73 +129,17 @@ void gen(Node *node) {
   }
 
   if (node->ty == ND_IF) {
-    gen(node->cond);
-    printf("  pop rax\n");
-    printf("  cmp rax, 1\n");
-    int end_label_id = branch_id++;
-    int else_label_id;
-
-    if (node->els != NULL ) {
-      else_label_id = branch_id++;
-      printf("  jne .L%d # jump to else clause\n", else_label_id);
-    } else {
-      printf("  jne .L%d # jump to end if\n", end_label_id);
-    }
-
-    Vector *body = node->body;
-    for (int i = 0; i < body->len; i++) {
-      gen(body->data[i]);
-    }
-
-    if (node->els != NULL && node->els->len > 0) {
-      printf("  jmp .L%d # jump to end clause\n", end_label_id);
-      Vector *els = node->els;
-      printf(".L%d: # else clause\n", else_label_id);
-      for (int i = 0; i < els->len; i++) {
-        gen(els->data[i]);
-      }
-    }
-
-    printf(".L%d: # end if clause\n", end_label_id);
+    gen_if(node);
     return;
   }
 
   if (node->ty == ND_WHILE) {
-    int cond_label_id = branch_id++;
-    int body_label_id = branch_id++;
-    printf("  jmp .L%d\n", cond_label_id);
-    printf(".L%d: # while-body\n", body_label_id);
-    Vector *body = node->body;
-    for (int i = 0; i < body->len; i++) {
-      gen(body->data[i]);
-    }
-    printf(".L%d: # while-cond\n", cond_label_id);
-    gen(node->cond);
-    printf("  pop rax\n");
-    printf("  cmp rax, 1\n");
-    printf("  je .L%d # jump to while-body\n", body_label_id);
+    gen_while(node);
     return;
   }
 
   if (node->ty == ND_FN_CALL) {
-    int num_args = 0;
-    if (node->args != NULL) {
-      num_args = node->args->len;
-      Node *arg_node;
-      for (int i = num_args - 1; i >= 0; i--) {
-        arg_node = node->args->data[i];
-        gen(arg_node);
-        if (i == 0) printf("  mov rdi, [rsp] # 1st arg\n");
-        if (i == 1) printf("  mov rsi, [rsp] # 2nd arg\n");
-        if (i == 2) printf("  mov rdx, [rsp] # 3rd arg\n");
-        if (i == 3) printf("  mov rcx, [rsp] # 4th arg\n");
-        if (i == 4) printf("  mov r8, [rsp] # 5th arg\n");
-        if (i == 5) printf("  mov r9, [rsp] # 6th arg\n");
-      }
-    }
-    printf("  call %s\n", node->name);
-    printf("  add rsp, %d # finish fn call\n", num_args * 8);
-    printf("  push rax\n");
+    gen_fn_call(node);
     return;
   }
 
