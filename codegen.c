@@ -93,6 +93,27 @@ void gen_while(Node *node) {
   printf("  je .L%d # jump to while-body\n", body_label_id);
 }
 
+void gen_for(Node *node) {
+  int cond_label_id = branch_id++;
+  int updater_label_id = branch_id++;
+  int body_label_id = branch_id++;
+
+  gen(node->init);
+  printf("  jmp .L%d\n", cond_label_id);
+  printf(".L%d: # for-body\n", body_label_id);
+  Vector *body = node->body;
+  for (int i = 0; i < body->len; i++) {
+    gen(body->data[i]);
+  }
+  printf(".L%d: # for-updater\n", updater_label_id);
+  gen(node->updater);
+  printf(".L%d: # for-cond\n", cond_label_id);
+  gen(node->cond);
+  printf("  pop rax\n");
+  printf("  cmp rax, 1\n");
+  printf("  je .L%d # jump to for-updater\n", body_label_id);
+}
+
 void gen_fn_call(Node *node) {
   int num_args = 0;
   if (node->args != NULL) {
@@ -135,6 +156,11 @@ void gen(Node *node) {
 
   if (node->ty == ND_WHILE) {
     gen_while(node);
+    return;
+  }
+
+  if (node->ty == ND_FOR) {
+    gen_for(node);
     return;
   }
 

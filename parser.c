@@ -72,6 +72,16 @@ Node *new_node_while_stmt(Node *cond, Vector *body) {
   return node;
 }
 
+Node *new_node_for_stmt(Node *init, Node *cond, Node *updater, Vector *body) {
+  Node *node = malloc(sizeof(Node));
+  node->ty = ND_FOR;
+  node->init = init;
+  node->cond = cond;
+  node->updater = updater;
+  node->body = body;
+  return node;
+}
+
 Token *current_token() {
   return (Token *)tokens->data[pos];
 }
@@ -306,6 +316,30 @@ Node *while_stmt() {
   return NULL;
 }
 
+Node *for_stmt() {
+  if (consume_keyword("for")) {
+    consume_and_assert(__LINE__, '(');
+    Node *init= assign();
+    consume_and_assert(__LINE__, ';');
+    Node *cond = assign();
+    consume_and_assert(__LINE__, ';');
+    Node *updater = assign();
+    consume_and_assert(__LINE__, ')');
+
+    Vector *body = NULL;
+    if (consume('{')) {
+      body = stmt();
+      consume_and_assert(__LINE__, '}');
+    } else {
+      body = new_vector();
+      vec_push(body, assign());
+      consume_and_assert(__LINE__, ';');
+    }
+    return new_node_for_stmt(init, cond, updater, body);
+  }
+  return NULL;
+}
+
 Vector *stmt() {
   Vector *stmts = new_vector();
   while(current_token()->ty != '}') {
@@ -318,6 +352,12 @@ Vector *stmt() {
     }
 
     node = while_stmt();
+    if (node != NULL) {
+      vec_push(stmts, node);
+      continue;
+    }
+
+    node = for_stmt();
     if (node != NULL) {
       vec_push(stmts, node);
       continue;
