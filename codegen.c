@@ -172,6 +172,28 @@ void gen(Node *node) {
       printf("  setne al\n");
       printf("  movzb rax, al\n");
       break;
+    case ND_LE:
+      printf("  cmp rdi, rax\n");
+      printf("  setle al\n");
+      printf("  movzb rax, al\n");
+      break;
+    case ND_GE:
+      printf("  cmp rdi, rax\n");
+      printf("  setge al\n");
+      printf("  movzb rax, al\n");
+      break;
+    case ND_LT:
+      printf("  sub rax, 1\n");
+      printf("  cmp rdi, rax\n");
+      printf("  setle al\n");
+      printf("  movzb rax, al\n");
+      break;
+    case ND_GT:
+      printf("  add rax, 1\n");
+      printf("  cmp rdi, rax\n");
+      printf("  setge al\n");
+      printf("  movzb rax, al\n");
+      break;
   }
   printf("  push rax\n");
 }

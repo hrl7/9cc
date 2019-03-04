@@ -100,8 +100,8 @@ void error(int line, char *str, char *arg) {
   fprintf(stderr, str, arg);
   printf(str, arg);
   Token *token = tokens->data[pos];
-  fprintf(stderr, "\n%d:, pos: %d, token-type: %c %d\n",line, pos, token->ty, token->ty);
-  printf("\n%d: pos: %d, token-type: %c %d\n",line, pos, token->ty, token->ty);
+  fprintf(stderr, "\n %s %d:, pos: %d, token-type: %c %d\n", __FILE__, line, pos, token->ty, token->ty);
+  printf("\n %s %d: pos: %d, token-type: %c %d\n",__FILE__, line, pos, token->ty, token->ty);
   exit(1);
 }
 
@@ -138,6 +138,10 @@ assign: add "=" assign
 cmp: add
 cmp: add "==" add
 cmp: add "!=" add
+cmp: add ">" add
+cmp: add "<" add
+cmp: add ">=" add
+cmp: add "<=" add
 
 add: mul
 add: add "+" mul
@@ -233,11 +237,12 @@ Node *term() {
 
 Node *cmp() {
   Node *node = add();
-  if (consume(TK_EQ)) {
-    node = new_node(ND_EQ, node, add());
-  } else if (consume(TK_NEQ)) {
-    node = new_node(ND_NEQ, node, add());
-  }
+  if (consume(TK_EQ)) return new_node(ND_EQ, node, add());
+  if (consume(TK_NEQ)) return new_node(ND_NEQ, node, add());
+  if (consume(TK_GE)) return new_node(ND_GE, node, add());
+  if (consume(TK_LE)) return new_node(ND_LE, node, add());
+  if (consume('<')) return new_node(ND_GT, node, add());
+  if (consume('>')) return new_node(ND_LT, node, add());
   return node;
 }
 

@@ -25,9 +25,26 @@ void tokenize(char *p) {
       continue;
     }
 
+    if (*p == '>' && *(p+1) == '=') {
+      token->ty = TK_LE;
+      token->input = NULL;
+      vec_push(tokens, token);
+      p += 2;
+      continue;
+    }
+
+    if (*p == '<' && *(p+1) == '=') {
+      token->ty = TK_GE;
+      token->input = NULL;
+      vec_push(tokens, token);
+      p += 2;
+      continue;
+    }
+
     if (*p == '+' || *p == '-' || *p == '*' || *p == '/' ||
         *p == '(' || *p == ')' || *p == '=' || *p == ';' ||
-        *p == '{' || *p == '}' || *p == ',') {
+        *p == '{' || *p == '}' || *p == ',' ||
+        *p == '<' || *p == '>') {
       token->ty = *p;
       token->input = p;
       vec_push(tokens, token);
@@ -58,7 +75,7 @@ void tokenize(char *p) {
       continue;
     }
 
-    fprintf(stderr, "cannot tokenize: %s\n", p);
+    fprintf(stderr, "cannot tokenize: '%c', code: %d\n", p[0], p[0]);
     exit(1);
   }
 

@@ -9,6 +9,8 @@ enum {
   TK_EOF,
   TK_EQ, // ==
   TK_NEQ, // !=
+  TK_GE, // <= greater or equal
+  TK_LE, // <= less or equal
 };
 
 typedef struct Token {
@@ -23,6 +25,10 @@ enum {
   ND_IDENT,
   ND_EQ,
   ND_NEQ,
+  ND_GE, // greater or equal
+  ND_LE, // less or equal
+  ND_GT, // greater than
+  ND_LT, // less than
   ND_FN_CALL,
   ND_FN_DECL,
   ND_IF,
