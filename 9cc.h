@@ -59,11 +59,6 @@ typedef struct Context {
   char *name;
 } Context;
 
-typedef struct Env {
-  struct Map *vars;
-
-} Env;
-
 typedef struct Vector {
   void **data;
   int capacity;

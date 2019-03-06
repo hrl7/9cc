@@ -100,6 +100,12 @@ void consume_and_assert(int line, char c) {
   }
 }
 
+void consume_keyword_and_assert(int line, const char *keyword) {
+  if (!consume_keyword(keyword)) {
+    error(line, "expected '%s', got token: %s", keyword, current_token()->input);
+  }
+}
+
 int consume(int ty) {
   if (current_token()->ty != ty) return 0;
   pos++;
@@ -148,11 +154,11 @@ if_stmt: 'if' '(' assign ')' '{' stmt '}' 'else' '{' stmt '}'
 while_stmt: 'while' '(' assign ')' assign ';'
 while_stmt: 'while' '(' assign ')' '{' stmt '}'
 
-fn_decl: ident '(' formal_args ')' '{' stmt '}'
+fn_decl: 'int' ident '(' formal_args ')' '{' stmt '}'
 
 formal_args: e
-formal_args: ident
-formal_args: ident ',' ident
+formal_args: 'int' ident
+formal_args: 'int' ident ',' formal_args
 
 assign: cmp
 assign: add "=" assign
@@ -420,8 +426,10 @@ Vector *formal_args() {
       return NULL;
     }
     Vector *arguments = new_vector();
+    consume_keyword_and_assert(__LINE__, "int");
     vec_push(arguments, ident());
     while(consume(',')) {
+      consume_keyword_and_assert(__LINE__, "int");
       vec_push(arguments, add());
     }
     if (consume(')')) {
@@ -443,6 +451,7 @@ Node *ident() {
 
 Node *fn_decl(Context *ctx) {
   int last_pos = pos;
+  if (!consume_keyword("int")) return NULL;
   Node *fn_name = ident();
   if (fn_name != NULL && current_token()->ty == '(') {
     Node *args = formal_args();
