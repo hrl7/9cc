@@ -22,18 +22,16 @@ Node *new_node_fn_call(char *name, Vector *arguments) {
   node->name = name;
   node->args = malloc(sizeof(Vector));
   node->args = arguments;
-  if (!map_get(variables, name)) {
-    // TODO: replace latter "name" with Type annotation
-    map_put(variables, name, name);
-  }
   return node;
 }
 
-Node *new_node_fn_decl(char *name,Vector *formal_args, Vector *body) {
+Node *new_node_fn_decl(Context *ctx, char *name,Vector *formal_args, Vector *body) {
   Node *node = malloc(sizeof(Node));
   node->ty = ND_FN_DECL;
   node->name = malloc(sizeof(char) * (strlen(name) + 1));
   node->name = name;
+  node->ctx = malloc(sizeof(Context));
+  node->ctx = ctx;
   if (formal_args) {
     node->args = formal_args;
   }
@@ -48,10 +46,6 @@ Node *new_node_ident(char *name) {
   node->ty = ND_IDENT;
   node->name = malloc(sizeof(char) * (strlen(name) + 1));
   node->name = name;
-  if (!map_get(variables, name)) {
-    // TODO: replace latter "name" with Type annotation
-    map_put(variables, name, name);
-  }
   return node;
 }
 
@@ -86,6 +80,13 @@ Node *new_node_ret(Node *body) {
   Node *node = malloc(sizeof(Node));
   node->ty = ND_RET;
   node->body = body;
+  return node;
+}
+
+Node *new_node_var_decl(Node *ident) {
+  Node *node = malloc(sizeof(Node));
+  node->ty = ND_VAR_DECL;
+  node->name = ident->name;
   return node;
 }
 
@@ -130,11 +131,14 @@ program: fn_decl program
 #block: '{' stmt '}'
 #type: "int"
 
+var_decl: 'int' ident
+
 stmt: e
 stmt: if_stmt stmt
 stmt: while_stmt stmt
-stmt: 'return' assign ";" stmt
-stmt: assign ";" stmt
+stmt: 'return' assign ';' stmt
+stmt: var_decl ';'
+stmt: assign ';' stmt
 
 if_stmt: 'if' '(' assign ')' assign ';'
 if_stmt: 'if' '(' assign ')' '{' stmt '}'
@@ -357,7 +361,15 @@ Node *ret() {
   return NULL;
 }
 
-Vector *stmt() {
+Node *var_decl() {
+  if (consume_keyword("int")) {
+    Node *node = ident();
+    return new_node_var_decl(node);
+  }
+  return NULL;
+}
+
+Vector *stmt(Context *ctx) {
   Vector *stmts = new_vector();
   while(current_token()->ty != '}') {
     Node *node;
@@ -383,6 +395,15 @@ Vector *stmt() {
     node = ret();
     if (node != NULL) {
       vec_push(stmts, node);
+      continue;
+    }
+
+    node = var_decl();
+    if (node != NULL) {
+      printf("# var decl found\n");
+      vec_push(stmts, node);
+      vec_push(ctx->vars, node->name);
+      consume_and_assert(__LINE__, ';');
       continue;
     }
 
@@ -420,15 +441,17 @@ Node *ident() {
   return NULL;
 }
 
-Node *fn_decl() {
+Node *fn_decl(Context *ctx) {
   int last_pos = pos;
   Node *fn_name = ident();
   if (fn_name != NULL && current_token()->ty == '(') {
     Node *args = formal_args();
     if (consume('{')) {
-      Vector *body = stmt();
+      Context *local_ctx = new_context(fn_name->name);
+      local_ctx->parent = ctx;
+      Vector *body = stmt(local_ctx);
       if (consume('}')) {
-        return new_node_fn_decl(fn_name->name, args, body);
+        return new_node_fn_decl(local_ctx, fn_name->name, args, body);
       }
       error(__LINE__, "no corresponding closing brace %s", current_token()->input);
     }
@@ -436,13 +459,16 @@ Node *fn_decl() {
   error(__LINE__, "no corresponding closing paren %s", current_token()->input);
 }
 
-void program() {
+void program(Context *ctx) {
   int i = 0;
   Token *token = tokens->data[pos];
   while (token->ty != TK_EOF) {
-    code[i++] = fn_decl();
+    code[i++] = fn_decl(ctx);
     token = tokens->data[pos];
   }
   code[i] = NULL;
 }
 
+void parse(Context *ctx) {
+  program(ctx);
+}

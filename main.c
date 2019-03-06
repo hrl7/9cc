@@ -3,8 +3,19 @@
 int pos;
 int branch_id = 0;
 Vector *tokens;
+Vector *scopes;
 Node *code[100];
 Map *variables;
+Context *global_ctx;
+
+Context *new_context(const char *name) {
+  Context *ctx = malloc(sizeof(Context *));
+  ctx->vars = new_vector();
+  ctx->parent = malloc(sizeof(Context *));
+  ctx->name = malloc(sizeof(char) * strlen(name));
+  ctx->name = name;
+  return ctx;
+}
 
 int main(int argc, char **argv) {
   if (argc != 2) {
@@ -16,11 +27,15 @@ int main(int argc, char **argv) {
     return 0;
   }
 
+  global_ctx = new_context("global");
+  scopes = new_vector();
   printf("# src => %s\n", argv[1]);
   variables = new_map();
   tokens = new_vector();
   tokenize(argv[1]);
-  program();
+  printf("# finish tokenize\n");
+  parse(global_ctx);
+  printf("# finish parsing\n");
 
   printf(".intel_syntax noprefix\n");
 #ifdef __APPLE__

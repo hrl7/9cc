@@ -4,7 +4,12 @@ void gen_lval(Node *node) {
   if (node->ty != ND_IDENT) {
     error("left value is not variable", node->ty);
   }
-  int offset = map_get_index(variables, node->name) * 8;
+  int offset = map_get(variables, node->name);
+  if (offset == -1) {
+    fprintf(stderr, "undefined variable %s\n", node->name);
+    printf("undefined variable %s\n", node->name);
+    exit(1);
+  }
   printf("  mov rax, rbp\n");
   printf("  sub rax, %d # var %s\n", offset, node->name);
   printf("  push rax\n");
@@ -16,20 +21,32 @@ void gen_fn_decl(Node *node) {
     printf("  push rbp\n");
     printf("  mov rbp, rsp\n");
 
+    variables = new_map();
     Vector *args = node->args;
+    Vector *local_vars = node->ctx->vars;
     int num_args = args == NULL ? 0 : args->len;
-    printf("  sub rsp, %d\n", num_args * 8);
+    int offset = 8;
+    for (int i = 0; i < local_vars->len; i++) {
+      printf("# local vars %d\n", i);
+      map_put(variables, local_vars->data[i], offset);
+      offset += 8;
+    };
     if (args != NULL) {
       Node *arg_node;
+      int bp_offset;
       for (int i = 0; i < num_args; i++) {
         arg_node = args->data[i];
-        if (i == 0) printf("  mov [rbp-8], rdi # 1st arg\n");
-        if (i == 1) printf("  mov [rbp-16], rsi # 2nd arg\n");
-        if (i == 2) printf("  mov [rbp-24], rdx # 3rd arg\n");
-        if (i == 3) printf("  mov [rbp-32], rcx # 4th arg\n");
-        if (i == 4) printf("  mov [rbp-40], r8 # 5th arg\n");
-        if (i == 5) printf("  mov [rbp-48], r9 # 6th arg\n");
+        bp_offset = offset + 8 * i;
+        map_put(variables, arg_node->name, bp_offset);
+        printf("# arg %d, %s\n", i, arg_node->name);
+        if (i == 0) printf("  mov [rbp-%d], rdi # 1st arg\n", bp_offset);
+        if (i == 1) printf("  mov [rbp-%d], rsi # 2nd arg\n", bp_offset);
+        if (i == 2) printf("  mov [rbp-%d], rdx # 3rd arg\n", bp_offset);
+        if (i == 3) printf("  mov [rbp-%d], rcx # 4th arg\n", bp_offset);
+        if (i == 4) printf("  mov [rbp-%d], r8 # 5th arg\n", bp_offset);
+        if (i == 5) printf("  mov [rbp-%d], r9 # 6th arg\n", bp_offset);
       }
+      printf("  sub rsp, %d\n", bp_offset);
     }
 
     Vector *body = node->body;
@@ -39,6 +56,7 @@ void gen_fn_decl(Node *node) {
         gen(body->data[i]);
       }
     }
+    printf("  pop rax\n");
     printf("  mov rsp, rbp\n");
     printf("  pop rbp # fn epilogue\n");
     printf("  ret\n\n");
@@ -129,22 +147,33 @@ void gen_fn_call(Node *node) {
       if (i == 4) printf("  mov r8, [rsp] # 5th arg\n");
       if (i == 5) printf("  mov r9, [rsp] # 6th arg\n");
     }
+    printf("  add rsp, %d\n", num_args * 8);
   }
   printf("  call %s\n", node->name);
-  printf("  add rsp, %d # finish fn call\n", num_args * 8);
   printf("  push rax\n");
 }
 
 void gen(Node *node) {
+  if (node->ty == ND_VAR_DECL) return;
   if (node->ty == ND_NUM) {
     printf("  push %d\n", node->val);
     return;
   }
 
   if (node->ty == ND_IDENT) {
+  /*
     gen_lval(node);
     printf("  pop rax\n");
     printf("  mov rax, [rax]\n");
+    printf("  push rax\n");
+    */
+    int offset = map_get(variables, node->name);
+    if (offset == -1) {
+      fprintf(stderr, "undefined variable %s\n", node->name);
+      printf("undefined variable %s\n", node->name);
+      exit(1);
+    }
+    printf("  mov rax, [rbp-%d] # var %s\n", offset, node->name);
     printf("  push rax\n");
     return;
   }

@@ -35,6 +35,7 @@ enum {
   ND_WHILE,
   ND_FOR,
   ND_RET,
+  ND_VAR_DECL,
 };
 
 typedef struct Node {
@@ -49,7 +50,19 @@ typedef struct Node {
   struct Node *init; // ND_FOR
   struct Node *updater; // ND_FOR
   struct Vector *els; // else clause for ND_IF
+  struct Context *ctx;
 } Node;
+
+typedef struct Context {
+  struct Vector *vars;
+  struct Context *parent;
+  char *name;
+} Context;
+
+typedef struct Env {
+  struct Map *vars;
+
+} Env;
 
 typedef struct Vector {
   void **data;
@@ -71,6 +84,7 @@ Vector *formal_args();
 Vector *actual_args();
 void program();
 
+Context *new_context(const char *name);
 Node *new_node(int ty, Node *lhs, Node *rhs);
 Node *new_node_num(int val);
 Node *new_node_ident(char *name);
@@ -85,6 +99,7 @@ void *map_get(Map *map, char *key);
 int expect(int line, int expected, int actual);
 void runtest();
 
+extern Vector *scopes;
 extern Map *variables;
 extern int pos;
 extern int branch_id;

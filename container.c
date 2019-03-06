@@ -26,7 +26,7 @@ void *map_get(Map *map, char *key) {
   if (index != -1) {
     return map->vals->data[index];
   }
-  return NULL;
+  return -1;
 }
 
 Vector *new_vector() {
@@ -58,7 +58,7 @@ void test_map() {
   printf("test_map\n");
   Map *map = new_map();
 
-  expect(__LINE__, 0, (int)map_get(map, "foo"));
+  expect(__LINE__, -1, (int)map_get(map, "foo"));
 
   map_put(map, "foo", (void *)2);
   expect(__LINE__, 2, (int)map_get(map, "foo"));
