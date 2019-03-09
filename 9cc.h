@@ -36,6 +36,7 @@ enum {
   ND_FOR,
   ND_RET,
   ND_VAR_DECL,
+  ND_ADDRESS,
 };
 
 typedef struct Node {
@@ -51,7 +52,13 @@ typedef struct Node {
   struct Node *updater; // ND_FOR
   struct Vector *els; // else clause for ND_IF
   struct Context *ctx;
+  struct Type *data_type;
 } Node;
+
+typedef struct Type {
+  enum { INT, PTR } ty;
+  struct Type *ptr_of;
+} Type;
 
 typedef struct Context {
   struct Vector *vars;
@@ -82,7 +89,7 @@ void program();
 Context *new_context(const char *name);
 Node *new_node(int ty, Node *lhs, Node *rhs);
 Node *new_node_num(int val);
-Node *new_node_ident(char *name);
+Node *new_node_ident(Type *type, char *name);
 
 Vector *new_vector();
 void vec_push(Vector *vec, void *elm);

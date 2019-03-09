@@ -25,7 +25,7 @@ Node *new_node_fn_call(char *name, Vector *arguments) {
   return node;
 }
 
-Node *new_node_fn_decl(Context *ctx, char *name,Vector *formal_args, Vector *body) {
+Node *new_node_fn_decl(Context *ctx, char *name, Vector *formal_args, Vector *body) {
   Node *node = malloc(sizeof(Node));
   node->ty = ND_FN_DECL;
   node->name = malloc(sizeof(char) * (strlen(name) + 1));
@@ -41,11 +41,12 @@ Node *new_node_fn_decl(Context *ctx, char *name,Vector *formal_args, Vector *bod
   return node;
 }
 
-Node *new_node_ident(char *name) {
+Node *new_node_ident(Type *type, char *name) {
   Node *node = malloc(sizeof(Node));
   node->ty = ND_IDENT;
   node->name = malloc(sizeof(char) * (strlen(name) + 1));
   node->name = name;
+  node->data_type = type;
   return node;
 }
 
@@ -83,11 +84,32 @@ Node *new_node_ret(Node *body) {
   return node;
 }
 
-Node *new_node_var_decl(Node *ident) {
+Node *new_node_address(Node *term) {
+  Node *node = malloc(sizeof(Node));
+  node->ty = ND_ADDRESS;
+  node->lhs = term;
+  return node;
+}
+
+Node *new_node_var_decl(Type *type, Node *ident) {
   Node *node = malloc(sizeof(Node));
   node->ty = ND_VAR_DECL;
   node->name = ident->name;
+  node->data_type = type;
   return node;
+}
+
+Type *new_int_type() {
+  Type *type = malloc(sizeof(Type));
+  type->ty = INT;
+  return type;
+}
+
+Type *new_ptr_type(Type *ptr_of) {
+  Type *type = malloc(sizeof(Type));
+  type->ty = PTR;
+  type->ptr_of = ptr_of;
+  return type;
 }
 
 Token *current_token() {
@@ -135,7 +157,10 @@ program: fn_decl program
 
 #fn_def: fn_decl block
 #block: '{' stmt '}'
-#type: "int"
+type_annot: 'int'
+type_annot: 'int' ptr
+ptr: e
+ptr: '*' ptr
 
 var_decl: 'int' ident
 
@@ -179,9 +204,10 @@ mul: term
 mul: mul "*" term
 mul: mul "/" term
 
+term: '&' term
 term: "(" add ")"
 term: num
-term: ident
+term: '*'* ident
 term: fnCall
 
 fn_call: ident '(' args ')'
@@ -225,11 +251,9 @@ Vector *actual_args() {
     return NULL;
   }
   Vector *arguments = new_vector();
-  Node *node = add();
-  vec_push(arguments, node);
-  while(consume(',')) {
+  do {
     vec_push(arguments, add());
-  }
+  } while(consume(','));
   if (consume(')')) {
     return arguments;
   }
@@ -246,18 +270,31 @@ Node *term() {
     return node;
   }
 
-  Token *token = tokens->data[pos];
+  Token *token = current_token();
   if (token->ty == TK_NUM) {
     token = tokens->data[pos++];
     return new_node_num(token->val);
   }
 
+  if (consume('&')) {
+    Node *node = term();
+    if (node == NULL) error(__LINE__, "expected lvalue, but got %s", token->input);
+    return new_node_address(node);
+  }
+
+  Type *type = new_int_type();
+  Type *_type;
+  while(consume('*')) {
+    _type = type;
+    type = new_ptr_type(_type);
+  }
+  token = current_token();
   if (token->ty == TK_IDENT) {
     char *name = ((Token *)tokens->data[pos++])->input;
     if (consume('(')) {
       return new_node_fn_call(name, actual_args());
     }
-    return new_node_ident(name);
+    return new_node_ident(type, name);
   }
 
   error(__LINE__, "invalid token: %s", token->input);
@@ -367,12 +404,27 @@ Node *ret() {
   return NULL;
 }
 
-Node *var_decl() {
+Type *type_annot() {
   if (consume_keyword("int")) {
-    Node *node = ident();
-    return new_node_var_decl(node);
+    Type *type = new_int_type();
+    Type *_type;
+    while(consume('*')) {
+      _type = type;
+      type = new_ptr_type(_type);
+    }
+    return type;
   }
   return NULL;
+}
+
+Node *var_decl() {
+  Type *type = type_annot();
+  if (type == NULL) {
+    return NULL;
+  }
+
+  Node *node = ident();
+  return new_node_var_decl(type, node);
 }
 
 Vector *stmt(Context *ctx) {
@@ -406,7 +458,6 @@ Vector *stmt(Context *ctx) {
 
     node = var_decl();
     if (node != NULL) {
-      printf("# var decl found\n");
       vec_push(stmts, node);
       vec_push(ctx->vars, node->name);
       consume_and_assert(__LINE__, ';');
@@ -426,25 +477,35 @@ Vector *formal_args() {
       return NULL;
     }
     Vector *arguments = new_vector();
-    consume_keyword_and_assert(__LINE__, "int");
-    vec_push(arguments, ident());
-    while(consume(',')) {
+
+    do {
       consume_keyword_and_assert(__LINE__, "int");
-      vec_push(arguments, add());
-    }
+      Node *name = ident();
+      if (name == NULL) {
+        error(__LINE__, "expected ident, but got %s", current_token()->input);
+      }
+      vec_push(arguments, name);
+    } while(consume(','));
+
     if (consume(')')) {
       return arguments;
     }
-    //error(__LINE__, "no corresponding close paren %s", current_token()->input);
   }
   return NULL;
 }
 
 Node *ident() {
+  Type *type = new_int_type();
+  Type *_type;
+  while(consume('*')) {
+    _type = type;
+    type = new_ptr_type(_type);
+  }
+
   Token *token = tokens->data[pos];
   if (token->ty == TK_IDENT) {
     char *name = ((Token *)tokens->data[pos++])->input;
-    return new_node_ident(name);
+    return new_node_ident(type, name);
   }
   return NULL;
 }

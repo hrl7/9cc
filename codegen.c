@@ -10,8 +10,14 @@ void gen_lval(Node *node) {
     printf("undefined variable %s\n", node->name);
     exit(1);
   }
-  printf("  mov rax, rbp\n");
-  printf("  sub rax, %d # var %s\n", offset, node->name);
+  printf("#lval type: %d, %x\n", node->data_type->ty, node->data_type->ptr_of);
+  if (node->data_type->ty == INT) {
+    printf("  mov rax, rbp # \n", offset);
+    printf("  sub rax, %d# address of var %s\n", offset, node->name);
+  } else {
+    printf("  mov rax, [rbp-%d] # var %s\n", offset, node->name);
+    printf("  lea rax, [rax] # address of var %s\n", node->name);
+  }
   printf("  push rax\n");
 }
 
@@ -46,8 +52,9 @@ void gen_fn_decl(Node *node) {
         if (i == 4) printf("  mov [rbp-%d], r8 # 5th arg\n", bp_offset);
         if (i == 5) printf("  mov [rbp-%d], r9 # 6th arg\n", bp_offset);
       }
-      printf("  sub rsp, %d\n", bp_offset);
+      offset = bp_offset;
     }
+    printf("  sub rsp, %d\n", offset);
 
     Vector *body = node->body;
     if (body != NULL) {
@@ -161,12 +168,6 @@ void gen(Node *node) {
   }
 
   if (node->ty == ND_IDENT) {
-  /*
-    gen_lval(node);
-    printf("  pop rax\n");
-    printf("  mov rax, [rax]\n");
-    printf("  push rax\n");
-    */
     int offset = map_get(variables, node->name);
     if (offset == -1) {
       fprintf(stderr, "undefined variable %s\n", node->name);
@@ -174,8 +175,28 @@ void gen(Node *node) {
       exit(1);
     }
     printf("  mov rax, [rbp-%d] # var %s\n", offset, node->name);
+    Type *type = node->data_type;
+    while (type != NULL && type->ty == PTR) {
+      printf("  mov rax, [rax]\n");
+      type = type->ptr_of;
+    }
     printf("  push rax\n");
     return;
+  }
+
+  if (node->ty == ND_ADDRESS) {
+    if (node->lhs != NULL && node->lhs->ty == ND_IDENT) {
+      int offset = map_get(variables, node->lhs->name);
+      if (offset == -1) {
+        fprintf(stderr, "undefined variable %s\n", node->name);
+        printf("undefined variable %s\n", node->name);
+        exit(1);
+      }
+      printf("  lea rax, [rbp-%d] # &%s\n", offset, node->lhs->name);
+      printf("  push rax\n");
+      return;
+    }
+    printf("%s %d: expected IDENT, but got %s\n", __FILE__, __LINE__, node->lhs->ty);
   }
 
   if (node->ty == ND_IF) {
