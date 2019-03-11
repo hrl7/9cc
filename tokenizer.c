@@ -54,7 +54,9 @@ void tokenize(char *p) {
 
     if ('a' <= *p && *p <= 'z') {
       char *sp = p;
-      while ('a' <= *p && *p <= 'z') {
+      while (('a' <= *p && *p <= 'z') ||
+             ('0' <= *p && *p <= '9') ||
+             *p == '_') {
         p++;
       }
       int width = p - sp + 1; // last 1 for \0

@@ -32,10 +32,15 @@ int main(int argc, char **argv) {
   printf("# src => %s\n", argv[1]);
   variables = new_map();
   tokens = new_vector();
+
   tokenize(argv[1]);
   printf("# finish tokenize\n");
+
   parse(global_ctx);
   printf("# finish parsing\n");
+
+  post_process(global_ctx, code);
+
 
   printf(".intel_syntax noprefix\n");
 #ifdef __APPLE__

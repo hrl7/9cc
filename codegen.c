@@ -248,6 +248,8 @@ void gen(Node *node) {
       printf("  add rax, rdi\n");
       break;
     case '-':
+      printf(" # node->lhs->type: %d\n", node->lhs->ty);
+      printf(" # node->rhs->type: %d\n", node->rhs->ty);
       printf("  sub rax, rdi\n");
       break;
     case '*':
