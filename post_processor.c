@@ -1,16 +1,31 @@
 #include "9cc.h"
 
+char *debug_ptr_type(Type *type) {
+  if (type->ty == INT) {
+    return "int";
+  }
+  if (type->ty == PTR) {
+    char *type_name = debug_ptr_type(type->ptr_of);
+    char *str = malloc(sizeof(char) * 100);
+    strcpy(str, "pointer of ");
+    strcat(str, type_name);
+    return str;
+  }
+}
+
 char *debug_type(Context *ctx, Node *node) {
   if (node->ty == ND_NUM) {
     return "number literal";
   }
 
+  Type *t;
   if (node->ty == ND_IDENT || node->ty == ND_VAR_DECL) {
     switch(node->data_type->ty) {
       case INT:
         return "int variable";
       case PTR:
-        return "pointer";
+        t = map_get(ctx->vars, node->name);
+        return debug_ptr_type(t);
     }
   }
   printf("# unexpected node type :%d\n", node->ty);
@@ -21,7 +36,7 @@ void traverse_node(Context *ctx, Node *node) {
   switch(node->ty) {
     case ND_FN_DECL:
       printf("# fn decl %s\n", node->name);
-      return traverse_nodes(ctx, node->body);
+      return traverse_nodes(node->ctx, node->body);
     case ND_FN_CALL:
       return;
     case ND_VAR_DECL:
@@ -40,7 +55,7 @@ void traverse_node(Context *ctx, Node *node) {
       return;
     case '+':
     case '-':
-      printf("# +,- left hand type: %s right hand type: %s\n",
+      printf("# +,- left hand type: %s, right hand type: %s\n",
         debug_type(ctx, node->lhs),
         debug_type(ctx, node->rhs));
       traverse_node(ctx, node->lhs);

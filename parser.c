@@ -459,7 +459,7 @@ Vector *stmt(Context *ctx) {
     node = var_decl();
     if (node != NULL) {
       vec_push(stmts, node);
-      vec_push(ctx->vars, node->name);
+      map_put(ctx->vars, node->name, node->data_type);
       consume_and_assert(__LINE__, ';');
       continue;
     }

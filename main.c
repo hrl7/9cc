@@ -10,7 +10,7 @@ Context *global_ctx;
 
 Context *new_context(const char *name) {
   Context *ctx = malloc(sizeof(Context *));
-  ctx->vars = new_vector();
+  ctx->vars = new_map();
   ctx->parent = malloc(sizeof(Context *));
   ctx->name = malloc(sizeof(char) * strlen(name));
   ctx->name = name;

@@ -61,7 +61,7 @@ typedef struct Type {
 } Type;
 
 typedef struct Context {
-  struct Vector *vars;
+  struct Map *vars; // Map<var_name, Type>
   struct Context *parent;
   char *name;
 } Context;

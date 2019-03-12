@@ -29,12 +29,14 @@ void gen_fn_decl(Node *node) {
 
     variables = new_map();
     Vector *args = node->args;
-    Vector *local_vars = node->ctx->vars;
+    Map *local_vars = node->ctx->vars;
     int num_args = args == NULL ? 0 : args->len;
     int offset = 8;
-    for (int i = 0; i < local_vars->len; i++) {
-      printf("# local vars %d\n", i);
-      map_put(variables, local_vars->data[i], offset);
+    char *var_name;
+    for (int i = 0; i < local_vars->keys->len; i++) {
+      var_name = local_vars->keys->data[i];
+      printf("# local vars %d %s\n", i, var_name);
+      map_put(variables, var_name, offset);
       offset += 8;
     };
     if (args != NULL) {
