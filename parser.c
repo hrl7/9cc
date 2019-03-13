@@ -1,5 +1,8 @@
 #include "9cc.h"
 
+extern void error(int line, char *str, char *arg);
+extern void error_with_msg(int line, char *msg);
+
 Node *new_node(int ty, Node *lhs, Node *rhs) {
   Node *node = malloc(sizeof(Node));
   node->ty = ty;
@@ -18,6 +21,12 @@ Node *new_node_num(int val) {
 Node *new_node_fn_call(char *name, Vector *arguments) {
   Node *node = malloc(sizeof(Node));
   node->ty = ND_FN_CALL;
+#if __APPLE__
+    char *new_name = malloc(sizeof(char) * (strlen(name) + 1));
+    sprintf(new_name, "_%s", name);
+    free(name);
+    name = new_name;
+#endif
   node->name = malloc(sizeof(char) * (strlen(name) + 1));
   node->name = name;
   node->args = malloc(sizeof(Vector));
@@ -28,6 +37,12 @@ Node *new_node_fn_call(char *name, Vector *arguments) {
 Node *new_node_fn_decl(Context *ctx, char *name, Vector *formal_args, Vector *body) {
   Node *node = malloc(sizeof(Node));
   node->ty = ND_FN_DECL;
+#if __APPLE__
+    char *new_name = malloc(sizeof(char) * (strlen(name) + 1));
+    sprintf(new_name, "_%s", name);
+    free(name);
+    name = new_name;
+#endif
   node->name = malloc(sizeof(char) * (strlen(name) + 1));
   node->name = name;
   node->ctx = malloc(sizeof(Context));
@@ -118,13 +133,17 @@ Token *current_token() {
 
 void consume_and_assert(int line, char c) {
   if (!consume(c)) {
-    error(line, "expected '%c', got token: %c", c, current_token()->input[0]);
+    char *msg = malloc(sizeof(char) * 100);
+    sprintf(msg, "expected '%c', got token: %c", c, current_token()->input[0]);
+    error_with_msg(line, msg);
   }
 }
 
 void consume_keyword_and_assert(int line, const char *keyword) {
   if (!consume_keyword(keyword)) {
-    error(line, "expected '%s', got token: %s", keyword, current_token()->input);
+    char *msg = malloc(sizeof(char) * 100);
+    sprintf(msg, "expected '%s', got token: %s", keyword, current_token()->input);
+    error_with_msg(line, msg);
   }
 }
 
@@ -150,6 +169,16 @@ void error(int line, char *str, char *arg) {
   printf("\n %s %d: pos: %d, token-type: %c %d\n",__FILE__, line, pos, token->ty, token->ty);
   exit(1);
 }
+
+void error_with_msg(int line, char *str) {
+  fprintf(stderr, str);
+  printf(str);
+  Token *token = tokens->data[pos];
+  fprintf(stderr, "\n %s %d:, pos: %d, token-type: %c %d\n", __FILE__, line, pos, token->ty, token->ty);
+  printf("\n %s %d: pos: %d, token-type: %c %d\n",__FILE__, line, pos, token->ty, token->ty);
+  exit(1);
+}
+
 
 /*
 program: e

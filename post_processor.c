@@ -1,5 +1,8 @@
 #include "9cc.h"
 
+extern void traverse_node(Context *ctx, Node *node);
+extern void traverse_nodes(Context *ctx, Vector *nodes);
+
 char *debug_ptr_type(Type *type) {
   if (type->ty == INT) {
     return "int";
@@ -46,7 +49,7 @@ void traverse_node(Context *ctx, Node *node) {
       printf("# var decl\n");
       return;
     case ND_IDENT:
-      printf("# ident %s, type: %s\n", node->name, debug_type(ctx, node));
+      printf("# identifier %s, type: %s\n", node->name, debug_type(ctx, node));
       return;
     case '=':
       printf("# assignment left hand type: %s\n", debug_type(ctx,node->lhs));

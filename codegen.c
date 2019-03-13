@@ -1,5 +1,7 @@
 #include "9cc.h"
 
+extern void gen(Node *node);
+
 void gen_lval(Node *node) {
   if (node->ty != ND_IDENT) {
     error("left value is not variable", node->ty);
