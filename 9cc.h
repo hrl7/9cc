@@ -22,21 +22,23 @@ typedef struct Token {
 
 enum {
   ND_NUM = 256,
-  ND_IDENT,
-  ND_EQ,
-  ND_NEQ,
-  ND_GE, // greater or equal
-  ND_LE, // less or equal
-  ND_GT, // greater than
-  ND_LT, // less than
-  ND_FN_CALL,
-  ND_FN_DECL,
-  ND_IF,
-  ND_WHILE,
-  ND_FOR,
-  ND_RET,
-  ND_VAR_DECL,
-  ND_ADDRESS,
+  ND_IDENT = 257,
+  ND_EQ = 258,
+  ND_NEQ = 259,
+  ND_GE = 260, // greater or equal
+  ND_LE = 261, // less or equal
+  ND_GT = 262, // greater than
+  ND_LT = 263, // less than
+  ND_FN_CALL = 264,
+  ND_FN_DECL = 265,
+  ND_IF = 266,
+  ND_WHILE = 267,
+  ND_FOR = 268,
+  ND_RET = 269,
+  ND_VAR_DECL = 270,
+  ND_REF = 271,
+  ND_DEREF = 272,
+  ND_ARG,
 };
 
 typedef struct Node {
@@ -63,7 +65,7 @@ typedef struct Type {
 typedef struct Context {
   struct Context *parent;
   char *name;
-  struct Map *vars; // Map<var_name, Type>
+  struct Map *vars; // Map<var_name, Record>
 } Context;
 
 typedef struct Vector {
@@ -77,6 +79,12 @@ typedef struct Map {
   Vector *vals;
 } Map;
 
+typedef struct Record {
+  int offset;
+  char *name;
+  Type *type;
+} Record;
+
 Node *add();
 Node *mul();
 Node *term();
@@ -89,7 +97,9 @@ void program();
 Context *new_context(const char *name);
 Node *new_node(int ty, Node *lhs, Node *rhs);
 Node *new_node_num(int val);
-Node *new_node_ident(Type *type, char *name);
+Node *new_node_ident(char *name);
+Type *new_int_type();
+Type *new_ptr_type(Type *ptr_of);
 
 Vector *new_vector();
 void vec_push(Vector *vec, void *elm);
@@ -97,6 +107,10 @@ void vec_push(Vector *vec, void *elm);
 Map *new_map();
 void map_put(Map *map, char *key, void *val);
 void *map_get(Map *map, char *key);
+
+Record *new_record(char *name, int offset, Type *type);
+Record *get_record(Context *ctx, char *name);
+void free_vector(Vector *vec);
 
 int expect(int line, int expected, int actual);
 void runtest();

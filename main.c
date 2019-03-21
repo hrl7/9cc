@@ -8,15 +8,6 @@ Node *code[100];
 Map *variables;
 Context *global_ctx;
 
-Context *new_context(const char *name) {
-  Context *ctx = malloc(sizeof(Context *));
-  ctx->vars = new_map();
-  ctx->parent = malloc(sizeof(Context *));
-  ctx->name = malloc(sizeof(char) * strlen(name));
-  ctx->name = name;
-  return ctx;
-}
-
 int main(int argc, char **argv) {
   if (argc != 2) {
     fprintf(stderr, "invalid number of arguments\n");

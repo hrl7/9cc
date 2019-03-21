@@ -21,32 +21,86 @@ char *debug_type(Context *ctx, Node *node) {
     return "number literal";
   }
 
-  Type *t;
+  Record *rec;
   if (node->ty == ND_IDENT || node->ty == ND_VAR_DECL) {
-    switch(node->data_type->ty) {
+    rec = get_record(ctx, node->name);
+    if (rec == NULL || rec->type == NULL) {
+      fprintf(stderr, "# unexpected record for %s\n", node->name);
+      printf("# unexpected record for %s\n", rec->type);
+      exit(1);
+    }
+    switch(rec->type->ty) {
       case INT:
         return "int variable";
       case PTR:
-        t = map_get(ctx->vars, node->name);
-        return debug_ptr_type(t);
+        return debug_ptr_type(rec->type);
     }
   }
-  printf("# unexpected node type :%d\n", node->ty);
-  return "";
+  if (node->ty == ND_DEREF) {
+    Node *term = node->lhs;
+    char *r = debug_type(ctx, term);
+    char *type_name = malloc(sizeof(char) * (strlen(r) + 10));
+    strcpy(type_name, "deref of ");
+    strcat(type_name, r);
+    return type_name;
+  }
+  printf("# unexpected node type :%d %c\n", node->ty, node->ty);
+  fprintf(stderr, "# unexpected node type :%d\n", node->ty);
+  exit(1);
+}
+
+void traverse_fn_decl(Context *ctx, Node *node) {
+  // Map<char*, Record>
+  printf("# node ty %d ctx: %x %s\n", node->ty, ctx, node->ctx->name);
+  Map *variables = ctx->vars;
+  Vector *args = node->args;
+  int num_args = args == NULL ? 0 : args->len;
+  int offset = 8;
+  char *var_name;
+  Record *rec;
+  for (int i = 0; i < variables->keys->len; i++) {
+    var_name = variables->keys->data[i];
+    printf("# local vars %d %s\n", i, var_name);
+    rec = map_get(variables, var_name);
+    printf("# %s\n", rec->name);
+    if (rec == NULL) {
+      fprintf(stderr, "got invalid ident %s\n", var_name);
+      printf("got invalid ident %s at postprocess\n", var_name);
+      exit(1);
+    }
+    rec->offset = offset;
+    printf("# traverse fn decl rec->offset %d\n", rec->offset);
+    offset += 8;
+  };
+  if (args != NULL) {
+    Node *arg_node;
+    int bp_offset;
+    for (int i = 0; i < num_args; i++) {
+      arg_node = args->data[i];
+      bp_offset = offset + 8 * i;
+      var_name = arg_node->name;
+      rec = new_record(var_name, bp_offset, arg_node->data_type);
+      map_put(variables, arg_node->name, rec);
+      printf("# arg %d, %s at post process\n", i, arg_node->name);
+    }
+    offset = bp_offset;
+  }
+  traverse_nodes(node->ctx, node->body);
 }
 
 void traverse_node(Context *ctx, Node *node) {
   switch(node->ty) {
     case ND_FN_DECL:
       printf("# fn decl %s\n", node->name);
-      return traverse_nodes(node->ctx, node->body);
+      printf("# ctx: %x\n", ctx);
+      return traverse_fn_decl(ctx, node);
     case ND_FN_CALL:
       return;
     case ND_VAR_DECL:
       printf("# var decl %s: %s\n", node->name, debug_type(ctx, node));
       return;
-    case ND_ADDRESS:
-      printf("# var decl\n");
+    case ND_REF:
+      printf("# reference\n");
       return;
     case ND_IDENT:
       printf("# identifier %s, type: %s\n", node->name, debug_type(ctx, node));

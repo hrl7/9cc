@@ -2,23 +2,33 @@
 
 extern void gen(Node *node);
 
+void error_node(int line, char *str, int node_type) {
+  fprintf(stderr, "\n %s %d:, %s. node_type: %d %c\n", __FILE__, line, str, node_type, node_type);
+  printf("\n %s %d:, %s. node_type: %d %c\n", __FILE__, line, str, node_type, node_type);
+  exit(1);
+}
+
 void gen_lval(Node *node) {
-  if (node->ty != ND_IDENT) {
-    error("left value is not variable", node->ty);
+  if (node->ty != ND_IDENT && node->ty != ND_ARG && node->ty != ND_DEREF) {
+    error_node(__LINE__, "left value is not variable", node->ty);
   }
-  int offset = map_get(variables, node->name);
-  if (offset == -1) {
-    fprintf(stderr, "undefined variable %s\n", node->name);
-    printf("undefined variable %s\n", node->name);
+  char *name;
+  if (node->ty == ND_IDENT || node->ty == ND_ARG) {
+    name = node->name;
+  } else if (node->ty == ND_DEREF) {
+    name = node->lhs->name;
+  }
+  Record *rec = map_get(variables, name);
+  if (rec == NULL) {
+    fprintf(stderr, "undefined variable %s\n", name);
+    printf("undefined variable %s\n", name);
     exit(1);
   }
-  printf("#lval type: %d, %x\n", node->data_type->ty, node->data_type->ptr_of);
-  if (node->data_type->ty == INT) {
-    printf("  mov rax, rbp # \n", offset);
-    printf("  sub rax, %d# address of var %s\n", offset, node->name);
-  } else {
-    printf("  mov rax, [rbp-%d] # var %s\n", offset, node->name);
-    printf("  lea rax, [rax] # address of var %s\n", node->name);
+  printf("  mov rax, rbp # \n", rec->offset);
+  printf("  sub rax, %d# address of var %s\n", rec->offset, name);
+  while (node != NULL && node->ty == ND_DEREF) {
+    printf("  mov rax, [rax]\n");
+    node = node->lhs;
   }
   printf("  push rax\n");
 }
@@ -31,14 +41,17 @@ void gen_fn_decl(Node *node) {
 
     variables = new_map();
     Vector *args = node->args;
+    // Map<char*, Record>
     Map *local_vars = node->ctx->vars;
     int num_args = args == NULL ? 0 : args->len;
     int offset = 8;
     char *var_name;
+    Record *rec;
     for (int i = 0; i < local_vars->keys->len; i++) {
-      var_name = local_vars->keys->data[i];
-      printf("# local vars %d %s\n", i, var_name);
-      map_put(variables, var_name, offset);
+      rec = local_vars->vals->data[i];
+      rec->offset = offset;
+      printf("# local vars %d, %s, offset:%d ,type:%d\n", i, rec->name, rec->offset, rec->type->ty);
+      map_put(variables, rec->name, rec);
       offset += 8;
     };
     if (args != NULL) {
@@ -47,8 +60,9 @@ void gen_fn_decl(Node *node) {
       for (int i = 0; i < num_args; i++) {
         arg_node = args->data[i];
         bp_offset = offset + 8 * i;
-        map_put(variables, arg_node->name, bp_offset);
-        printf("# arg %d, %s\n", i, arg_node->name);
+        rec = new_record(arg_node->name, bp_offset, arg_node->data_type);
+        map_put(variables, arg_node->name, rec);
+        printf("# arg %d, %s, offset:%d ,type:%d\n", i, rec->name, rec->offset, rec->type->ty);
         if (i == 0) printf("  mov [rbp-%d], rdi # 1st arg\n", bp_offset);
         if (i == 1) printf("  mov [rbp-%d], rsi # 2nd arg\n", bp_offset);
         if (i == 2) printf("  mov [rbp-%d], rdx # 3rd arg\n", bp_offset);
@@ -64,6 +78,7 @@ void gen_fn_decl(Node *node) {
     if (body != NULL) {
       for (int i = 0; i < body->len; i++) {
         printf("# in function %s, statement: %d\n", node->name, i);
+        Node *b = body->data[i];
         gen(body->data[i]);
       }
     }
@@ -172,35 +187,40 @@ void gen(Node *node) {
   }
 
   if (node->ty == ND_IDENT) {
-    int offset = map_get(variables, node->name);
-    if (offset == -1) {
+    Record *rec = map_get(variables, node->name);
+    if (rec == NULL) {
       fprintf(stderr, "undefined variable %s\n", node->name);
       printf("undefined variable %s\n", node->name);
       exit(1);
     }
-    printf("  mov rax, [rbp-%d] # var %s\n", offset, node->name);
-    Type *type = node->data_type;
-    while (type != NULL && type->ty == PTR) {
-      printf("  mov rax, [rax]\n");
-      type = type->ptr_of;
-    }
+    printf("  mov rax, [rbp-%d] # var %s\n", rec->offset, node->name);
     printf("  push rax\n");
     return;
   }
 
-  if (node->ty == ND_ADDRESS) {
+  if (node->ty == ND_REF) {
     if (node->lhs != NULL && node->lhs->ty == ND_IDENT) {
-      int offset = map_get(variables, node->lhs->name);
-      if (offset == -1) {
+      Record *rec = map_get(variables, node->lhs->name);
+      if (rec == NULL) {
         fprintf(stderr, "undefined variable %s\n", node->name);
         printf("undefined variable %s\n", node->name);
         exit(1);
       }
-      printf("  lea rax, [rbp-%d] # &%s\n", offset, node->lhs->name);
+      printf("  lea rax, [rbp-%d] # &%s\n", rec->offset, node->lhs->name);
       printf("  push rax\n");
       return;
     }
     printf("%s %d: expected IDENT, but got %s\n", __FILE__, __LINE__, node->lhs->ty);
+    exit(1);
+  }
+
+  if (node->ty == ND_DEREF) {
+    gen(node->lhs);
+    printf("  mov rax, [rax]\n");
+    printf("  add rsp, 8\n");
+    printf("  push rax\n");
+    printf("# node deref ^\n" );
+    return;
   }
 
   if (node->ty == ND_IF) {
@@ -233,6 +253,7 @@ void gen(Node *node) {
   }
 
   if (node->ty == '=') {
+    printf("# assignment\n");
     gen_lval(node->lhs);
     gen(node->rhs);
     printf("  pop rdi\n");
@@ -295,6 +316,10 @@ void gen(Node *node) {
       printf("  setge al\n");
       printf("  movzb rax, al\n");
       break;
+    default:
+      fprintf(stderr, "not implemented yet NODE Type :%d\n", node->ty);
+      printf("not implemented yet NODE Type :%d\n", node->ty);
+      exit(1);
   }
   printf("  push rax\n");
 }
