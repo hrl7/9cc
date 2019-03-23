@@ -44,8 +44,71 @@ char *debug_type(Context *ctx, Node *node) {
     strcat(type_name, r);
     return type_name;
   }
+
+  if (node->ty == '+' || node->ty == '-' || node->ty == '*' || node->ty == '/') {
+    char *l = debug_type(ctx, node->lhs);
+    char *r = debug_type(ctx, node->rhs);
+    char *type_name = malloc(sizeof(char) * (strlen(r) + strlen(l) + 7));
+    strcpy(type_name, "expr:");
+    strcat(type_name, l);
+    strcat(type_name, &(node->ty));
+    strcat(type_name, r);
+    return type_name;
+  }
   printf("# unexpected node type :%d %c\n", node->ty, node->ty);
-  fprintf(stderr, "# unexpected node type :%d\n", node->ty);
+  fprintf(stderr, "# unexpected node type :%d %c\n", node->ty, node->ty);
+  exit(1);
+}
+
+int get_addr_width(Context *ctx, Node *node) {
+  if (node->ty == ND_NUM ||
+      node->ty == ND_EQ || node->ty == ND_NEQ ||
+      node->ty == ND_GE || node->ty == ND_LE ||
+      node->ty == ND_GT || node->ty == ND_LT) {
+    return 0;
+  }
+
+  if (node->ty == ND_IDENT) {
+    Record *rec = get_record(ctx, node->name);
+    if (rec->type->ty == INT) {
+      return 0;
+    }
+    if (rec->type->ty == PTR) {
+      Type *t = rec->type->ptr_of;
+      if (t == NULL) {
+        printf("%s, %d: unexpected type\n", __FILE__, __LINE__);
+        exit(1);
+      }
+
+      switch(t->ty) {
+        case INT:
+          return 4;
+        case PTR:
+          return 8;
+        default:
+          printf("%s, %d: unexpected type\n", __FILE__, __LINE__);
+          exit(1);
+      }
+    }
+  }
+
+  if (node->ty == ND_DEREF) {
+    Record *rec = get_record(ctx, node->lhs->name);
+    if (rec->type->ptr_of->ty == INT) {
+      return 0;
+    }
+    printf("%s, %d: not implemented yet\n", __FILE__, __LINE__);
+    exit(1);
+  }
+
+  if (node->ty == '+' || node->ty == '-') {
+    int lhs_width = get_addr_width(ctx, node->lhs);
+    int rhs_width = get_addr_width(ctx, node->rhs);
+    printf("# lhs width %d, rhs width %d\n", lhs_width, rhs_width);
+    if (lhs_width == 0) return rhs_width;
+    if (rhs_width == 0) return lhs_width;
+  }
+  printf("%s, %d: not implemented node type %d %c\n", __FILE__, __LINE__, node->ty, node->ty);
   exit(1);
 }
 
@@ -115,8 +178,20 @@ void traverse_node(Context *ctx, Node *node) {
       printf("# +,- left hand type: %s, right hand type: %s\n",
         debug_type(ctx, node->lhs),
         debug_type(ctx, node->rhs));
-      traverse_node(ctx, node->lhs);
-      traverse_node(ctx, node->rhs);
+      int width = get_addr_width(ctx, node->lhs);
+      printf("# node->lhs width %d\n", width);
+      if (width != 0) {
+        node->rhs = new_node('*', new_node_num(width), node->rhs);
+        traverse_node(ctx, node->lhs);
+        return;
+      }
+      printf("# node->rhs width %d\n", width);
+      width = get_addr_width(ctx, node->rhs);
+      if (width != 0) {
+        node->lhs = new_node('*', new_node_num(width), node->lhs);
+        traverse_node(ctx, node->rhs);
+        return;
+      }
       return;
 
     case ND_IF:

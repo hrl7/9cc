@@ -27,7 +27,11 @@ echo "*****************"
 }
 
 show_title arithmetic_for_pointer
+try 7 "int main(){int *a; a = alloc4(7, 2, 3, 4); int *b; b = a; return *b;}"
 try 2 "int main(){int *a; a = alloc4(1, 2, 3, 4); int *b; b = a + 1; return *b;}"
+try 3 "int main(){int *a; a = alloc4(1, 2, 3, 4); int *b; b = 2 + a; return *b;}"
+try 4 "int main(){int *a; a = alloc4(1, 2, 3, 4); int *b; b = 1 + a + 2; return *b;}"
+try 4 "int main(){int *a; a = alloc4(1, 2, 3, 4); int *b; b = 1 + a + 1 * 2; return *b;}"
 
 show_title pointer
 try 7 "int main(){int a; a = 7; int *b; b = &a; return *b;}"
