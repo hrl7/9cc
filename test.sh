@@ -55,45 +55,45 @@ try 55 "int main(){ return 1+2+3+4+5+6+7+8+9+10;}"
 show_title assignment
 try 4 "int main(){int hoge; hoge = 4; return hoge;}"
 try 8 "int main(){int a; a=4; return a + 4;}"
-try 3 "int main(){int a; int b; int c; a = 4; b = 5; c = 6; a + b - c;}"
+try 3 "int main(){int a; int b; int c; a = 4; b = 5; c = 6; return a + b - c;}"
 try 3 "int main(){int fuga;fuga = 4; int hoge = 5; int piyo  = 6; return hoge+fuga-piyo;}"
 try 2 "int main(){int a; a = 0; int b; b = 0; int c; c = a == b; return c + 1; }"
 
 show_title binary operator
-try 1 "int main(){7 <= 8;}"
-try 1 "int main(){7 <= 7;}"
-try 0 "int main(){7 <= 6;}"
-try 1 "int main(){8 >= 7;}"
-try 1 "int main(){7 >= 7;}"
-try 0 "int main(){6 >= 7;}"
-try 1 "int main(){7 < 8;}"
-try 0 "int main(){7 < 7;}"
-try 0 "int main(){7 < 6;}"
-try 1 "int main(){8 > 7;}"
-try 0 "int main(){7 > 7;}"
-try 0 "int main(){6 > 7;}"
-try 1 "int main(){10 == 10;}"
-try 0 "int main(){10 == 9;}"
-try 0 "int main(){10 != 10;}"
-try 1 "int main(){10 != 9;}"
+try 1 "int main(){return 7 <= 8;}"
+try 1 "int main(){return 7 <= 7;}"
+try 0 "int main(){return 7 <= 6;}"
+try 1 "int main(){return 8 >= 7;}"
+try 1 "int main(){return 7 >= 7;}"
+try 0 "int main(){return 6 >= 7;}"
+try 1 "int main(){return 7 < 8;}"
+try 0 "int main(){ return 7 < 7;}"
+try 0 "int main(){ return 7 < 6;}"
+try 1 "int main(){ return 8 > 7;}"
+try 0 "int main(){ return 7 > 7;}"
+try 0 "int main(){ return 6 > 7;}"
+try 1 "int main(){ return 10 == 10;}"
+try 0 "int main(){ return 10 == 9;}"
+try 0 "int main(){ return 10 != 10;}"
+try 1 "int main(){ return 10 != 9;}"
 
 show_title function_call
-try 0 "int main(){foo();}"
-try 7 "int main(){bar(3,4);}"
-try 10 "int add(int a,int b) { a + b; } int main() {add(8, 2);}"
-try 6 "int sub(int a,int  b) { a - b; } int main() {sub(8, 2);}"
-try 10 "int sub(int a, int b) { a - b; } int main(){int x; x = sub(8, 2);x + 4;}"
+try 0 "int main(){ return foo();}"
+try 7 "int main(){ return bar(3,4);}"
+try 10 "int add(int a,int b) {return  a + b; } int main() {return add(8, 2);}"
+try 6 "int sub(int a,int  b) {return a - b; } int main() {return sub(8, 2);}"
+try 10 "int sub(int a, int b) {return  a - b; } int main(){int x; x = sub(8, 2);return x + 4;}"
 try 0 "\
 int sub(int a, int b) { \
-  a - b; \
+  return a - b; \
 } \
 int add(int a, int b) { \
-  a + b; \
+  return a + b; \
 } \
 int main() {\
   int x; \
   x = add(8, 2); \
-  sub(x, 10); \
+  return sub(x, 10); \
 }"
 
 show_title if-else

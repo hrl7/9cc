@@ -521,14 +521,13 @@ Vector *formal_args() {
       return NULL;
     }
     Vector *arguments = new_vector();
-
     do {
-      consume_keyword_and_assert(__LINE__, "int");
+      Type *type = type_annot();
       Node *name = ident();
       if (name == NULL) {
         error(__LINE__, "expected ident, but got %s", current_token()->input);
       }
-      vec_push(arguments, name);
+      vec_push(arguments, new_node_arg(type, name->name));
     } while(consume(','));
 
     if (consume(')')) {
@@ -553,7 +552,8 @@ Node *fn_decl(Context *ctx) {
   if (!consume_keyword("int")) return NULL;
   Node *fn_name = ident();
   if (fn_name != NULL && current_token()->ty == '(') {
-    Node *args = formal_args(); if (consume('{')) { Context *local_ctx = new_context(fn_name->name);
+    Node *args = formal_args();
+    if (consume('{')) { Context *local_ctx = new_context(fn_name->name);
     printf("# ctx %x\n", ctx);
       local_ctx->parent = ctx;
       Vector *body = stmt(local_ctx);
