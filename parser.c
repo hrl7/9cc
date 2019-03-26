@@ -47,7 +47,7 @@ Node *new_node_fn_decl(Context *ctx, char *name, Vector *formal_args, Vector *bo
   node->name = name;
   node->ctx = malloc(sizeof(Context));
   node->ctx = ctx;
-  if (formal_args) {
+  if (formal_args != NULL) {
     node->args = formal_args;
   }
   if (body) {
@@ -131,6 +131,7 @@ Node *new_node_var_decl(Type *type, Node *ident) {
 Type *new_int_type() {
   Type *type = malloc(sizeof(Type));
   type->ty = INT;
+  type->ptr_of = NULL;
   return type;
 }
 
@@ -138,6 +139,14 @@ Type *new_ptr_type(Type *ptr_of) {
   Type *type = malloc(sizeof(Type));
   type->ty = PTR;
   type->ptr_of = ptr_of;
+  return type;
+}
+
+Type *new_arr_type(Type *ptr_of, size_t array_size) {
+  Type *type = malloc(sizeof(Type));
+  type->ty = ARRAY;
+  type->ptr_of = ptr_of;
+  type->array_size = array_size;
   return type;
 }
 
@@ -205,7 +214,8 @@ type_annot: 'int' ptr
 ptr: e
 ptr: '*' ptr
 
-var_decl: 'int' ident
+var_decl: type_annot ident
+var_decl: type_annot ident '[' term ']'
 
 stmt: e
 stmt: if_stmt stmt
@@ -467,6 +477,15 @@ Node *var_decl() {
   }
 
   Node *node = ident();
+
+  if (consume('[')) {
+    Node *length = term();
+    if (length->ty != ND_NUM) {
+      error(__LINE__, "expected ND_NUM, got %d\n", length->ty);
+    }
+    type = new_arr_type(type, length->val);
+    consume_and_assert(__LINE__, ']');
+  }
   return new_node_var_decl(type, node);
 }
 

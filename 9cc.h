@@ -19,7 +19,6 @@ typedef struct Token {
   char *input;
 } Token;
 
-
 enum {
   ND_NUM = 256,
   ND_IDENT = 257,
@@ -58,8 +57,9 @@ typedef struct Node {
 } Node;
 
 typedef struct Type {
-  enum { INT, PTR } ty;
+  enum { INT, PTR, ARRAY } ty;
   struct Type *ptr_of;
+  size_t array_size;
 } Type;
 
 typedef struct Context {

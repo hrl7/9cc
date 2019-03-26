@@ -26,6 +26,13 @@ echo $1
 echo "*****************"
 }
 
+show_title array
+try 7 "int main(){int a[10]; return 7;} "
+try 2 "int main(){int a[2]; *a = 2; return *a;} "
+try 3 "int main(){int a[2]; *a = 2; a = a + 1; *a = 3; return *a;} "
+try 5 "int main(){int *b; int a[2]; b = 0; *a = 2; b = a + 1; *b = 3; return *a + *b;} "
+#try 2 "int main(){int a[2]; *(a + 1) = 2; return *(a + 1);} "
+
 show_title arithmetic_for_pointer
 try 7 "int main(){int *a; a = alloc4(7, 2, 3, 4); int *b; b = a; return *b;}"
 try 2 "int main(){int *a; a = alloc4(1, 2, 3, 4); int *b; b = a + 1; return *b;}"
@@ -55,6 +62,7 @@ try 55 "int main(){ return 1+2+3+4+5+6+7+8+9+10;}"
 show_title assignment
 try 4 "int main(){int hoge; hoge = 4; return hoge;}"
 try 8 "int main(){int a; a=4; return a + 4;}"
+try 9 "int main(){int a; int b; a = 4; b = 5; return a + b;}"
 try 3 "int main(){int a; int b; int c; a = 4; b = 5; c = 6; return a + b - c;}"
 try 3 "int main(){int fuga;fuga = 4; int hoge = 5; int piyo  = 6; return hoge+fuga-piyo;}"
 try 2 "int main(){int a; a = 0; int b; b = 0; int c; c = a == b; return c + 1; }"

@@ -14,6 +14,13 @@ char *debug_ptr_type(Type *type) {
     strcat(str, type_name);
     return str;
   }
+  if (type->ty == ARRAY) {
+    char *type_name = debug_ptr_type(type->ptr_of);
+    char *str = malloc(sizeof(char) * 100);
+    strcpy(str, "array of ");
+    strcat(str, type_name);
+    return str;
+  }
 }
 
 char *debug_type(Context *ctx, Node *node) {
@@ -33,7 +40,13 @@ char *debug_type(Context *ctx, Node *node) {
       case INT:
         return "int variable";
       case PTR:
+      case ARRAY:
         return debug_ptr_type(rec->type);
+      default:
+        printf("%s %d: unexpected type :%d\n",__FILE__, __LINE__, rec->type->ty);
+        fprintf(stderr, "%s %d:, nexpected type :%d\n", __FILE__, __LINE__, rec->type->ty);
+        exit(1);
+
     }
   }
   if (node->ty == ND_DEREF) {
@@ -55,8 +68,17 @@ char *debug_type(Context *ctx, Node *node) {
     strcat(type_name, r);
     return type_name;
   }
-  printf("# unexpected node type :%d %c\n", node->ty, node->ty);
-  fprintf(stderr, "# unexpected node type :%d %c\n", node->ty, node->ty);
+
+  if (node->ty == ND_VAR_DECL) {
+
+    printf("# args %x\n", node->args);
+    if (node->args != NULL) {
+      printf("# args length %d\n", node->args->len);
+    }
+    return "args";
+  }
+  printf("%s %d: unexpected node type :%d %c\n",__FILE__, __LINE__, node->ty, node->ty);
+  fprintf(stderr, "%s %d:, nexpected node type :%d %c\n", __FILE__, __LINE__, node->ty, node->ty);
   exit(1);
 }
 
@@ -73,7 +95,7 @@ int get_addr_width(Context *ctx, Node *node) {
     if (rec->type->ty == INT) {
       return 0;
     }
-    if (rec->type->ty == PTR) {
+    if (rec->type->ty == PTR || rec->type->ty == ARRAY) {
       Type *t = rec->type->ptr_of;
       if (t == NULL) {
         printf("%s, %d: unexpected type\n", __FILE__, __LINE__);
@@ -123,7 +145,7 @@ void traverse_fn_decl(Context *ctx, Node *node) {
   Record *rec;
   for (int i = 0; i < variables->keys->len; i++) {
     var_name = variables->keys->data[i];
-    printf("# local vars %d %s\n", i, var_name);
+    printf("# local vars %d %s, offset: %d\n", i, var_name, offset);
     rec = map_get(variables, var_name);
     printf("# %s\n", rec->name);
     if (rec == NULL) {

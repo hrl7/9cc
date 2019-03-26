@@ -8,6 +8,14 @@ void error_node(int line, char *str, int node_type) {
   exit(1);
 }
 
+void assert_rec_exist(Record *rec, char *name) {
+  if (rec == NULL) {
+    fprintf(stderr, "undefined variable %s\n", name);
+    printf("undefined variable %s\n", name);
+    exit(1);
+  }
+}
+
 void gen_lval(Node *node) {
   if (node->ty != ND_IDENT && node->ty != ND_ARG && node->ty != ND_DEREF) {
     error_node(__LINE__, "left value is not variable", node->ty);
@@ -19,11 +27,7 @@ void gen_lval(Node *node) {
     name = node->lhs->name;
   }
   Record *rec = map_get(variables, name);
-  if (rec == NULL) {
-    fprintf(stderr, "undefined variable %s\n", name);
-    printf("undefined variable %s\n", name);
-    exit(1);
-  }
+  assert_rec_exist(rec, name);
   printf("  mov rax, rbp # \n", rec->offset);
   printf("  sub rax, %d# address of var %s\n", rec->offset, name);
   while (node != NULL && node->ty == ND_DEREF) {
@@ -31,6 +35,54 @@ void gen_lval(Node *node) {
     node = node->lhs;
   }
   printf("  push rax\n");
+}
+
+size_t get_data_width_by_type(Type *type) {
+  switch(type->ty) {
+    case INT:
+      return 4;
+    case PTR:
+    case ARRAY:
+      return 8;
+    default:
+      printf("%s %d: unexpected type %d\n", __FILE__, __LINE__, type->ty);
+      exit(1);
+  }
+}
+size_t get_data_width_by_record(Record *rec) {
+  return get_data_width_by_type(rec->type);
+}
+
+size_t get_data_width(Node *node) {
+  if (node->ty == ND_IDENT) {
+    Record *rec = map_get(variables, node->name);
+    assert_rec_exist(rec, node->name);
+    return get_data_width_by_record(rec);
+  }
+
+  if (node->ty == ND_REF) {
+    return 8;
+  }
+
+  if (node->ty == ND_DEREF) {
+    return get_data_width(node->lhs);
+  }
+
+  if (node->ty == ND_NUM) {
+    return 4;
+  }
+
+  if (node->ty == '+' || node->ty == '-') {
+    size_t lhs = get_data_width(node->lhs);
+    size_t rhs = get_data_width(node->rhs);
+    if (lhs > rhs) {
+      return rhs;
+    }
+    return lhs;
+  }
+
+  printf("%s %d: unexpected node type %d : %c\n", __FILE__, __LINE__, node->ty, node->ty);
+  exit(1);
 }
 
 void gen_fn_decl(Node *node) {
@@ -49,10 +101,13 @@ void gen_fn_decl(Node *node) {
     Record *rec;
     for (int i = 0; i < local_vars->keys->len; i++) {
       rec = local_vars->vals->data[i];
+      offset += (int)get_data_width_by_record(rec);
       rec->offset = offset;
       printf("# local vars %d, %s, offset:%d ,type:%d\n", i, rec->name, rec->offset, rec->type->ty);
       map_put(variables, rec->name, rec);
-      offset += 8;
+      if (rec->type->ty == ARRAY) {
+        offset += rec->type->array_size * get_data_width_by_type(rec->type->ptr_of);
+      }
     };
     if (args != NULL) {
       Node *arg_node;
@@ -73,6 +128,15 @@ void gen_fn_decl(Node *node) {
       offset = bp_offset;
     }
     printf("  sub rsp, %d\n", offset);
+    for (int i = 0; i < local_vars->keys->len; i++) {
+      rec = map_get(variables, rec->name);
+      assert_rec_exist(rec, rec->name);
+      if(rec->type->ty == ARRAY) {
+        printf("mov rax, rbp\n");
+        printf("sub rax, %d\n", rec->offset + (int)get_data_width_by_record(rec) * rec->type->array_size );
+        printf("mov [rbp-%d], rax\n", rec->offset);
+      }
+    };
 
     Vector *body = node->body;
     if (body != NULL) {
@@ -188,12 +252,12 @@ void gen(Node *node) {
 
   if (node->ty == ND_IDENT) {
     Record *rec = map_get(variables, node->name);
-    if (rec == NULL) {
-      fprintf(stderr, "undefined variable %s\n", node->name);
-      printf("undefined variable %s\n", node->name);
-      exit(1);
+    assert_rec_exist(rec, node->name);
+    if ((int)get_data_width_by_record(rec) == 4) {
+      printf("  mov eax, [rbp-%d] # var %s\n", rec->offset, node->name);
+    } else {
+      printf("  mov rax, [rbp-%d] # var %s\n", rec->offset, node->name);
     }
-    printf("  mov rax, [rbp-%d] # var %s\n", rec->offset, node->name);
     printf("  push rax\n");
     return;
   }
@@ -258,7 +322,16 @@ void gen(Node *node) {
     gen(node->rhs);
     printf("  pop rdi\n");
     printf("  pop rax\n");
-    printf("  mov [rax], rdi\n");
+    if (node->lhs->ty == ND_IDENT) {
+      Record *rec = map_get(variables, node->lhs->name);
+      if (rec->type->ty == INT) {
+        printf("  mov [rax], edi\n");
+      } else {
+        printf("  mov [rax], rdi\n");
+      }
+    } else {
+      printf("  mov [rax], rdi\n");
+    }
     printf("  push rdi\n");
     return;
   }
@@ -273,8 +346,6 @@ void gen(Node *node) {
       printf("  add rax, rdi\n");
       break;
     case '-':
-      printf(" # node->lhs->type: %d\n", node->lhs->ty);
-      printf(" # node->rhs->type: %d\n", node->rhs->ty);
       printf("  sub rax, rdi\n");
       break;
     case '*':
@@ -285,34 +356,58 @@ void gen(Node *node) {
       printf("  div rdi\n");
       break;
     case ND_EQ:
-      printf("  cmp rdi, rax\n");
+      if ((int)get_data_width(node->lhs) == 4 || (int)get_data_width(node->rhs) == 4) {
+        printf("  cmp edi, eax\n");
+      } else {
+        printf("  cmp rdi, rax\n");
+      }
       printf("  sete al\n");
       printf("  movzb rax, al\n");
       break;
     case ND_NEQ:
-      printf("  cmp rdi, rax\n");
+      if ((int)get_data_width(node->lhs) == 4 || (int)get_data_width(node->rhs) == 4) {
+        printf("  cmp edi, eax\n");
+      } else {
+        printf("  cmp rdi, rax\n");
+      }
       printf("  setne al\n");
       printf("  movzb rax, al\n");
       break;
     case ND_LE:
-      printf("  cmp rdi, rax\n");
+      if ((int)get_data_width(node->lhs) == 4 || (int)get_data_width(node->rhs) == 4) {
+        printf("  cmp edi, eax\n");
+      } else {
+        printf("  cmp rdi, rax\n");
+      }
       printf("  setle al\n");
       printf("  movzb rax, al\n");
       break;
     case ND_GE:
-      printf("  cmp rdi, rax\n");
+      if ((int)get_data_width(node->lhs) == 4 || (int)get_data_width(node->rhs) == 4) {
+        printf("  cmp edi, eax\n");
+      } else {
+        printf("  cmp rdi, rax\n");
+      }
       printf("  setge al\n");
       printf("  movzb rax, al\n");
       break;
     case ND_LT:
       printf("  sub rax, 1\n");
-      printf("  cmp rdi, rax\n");
+      if ((int)get_data_width(node->lhs) == 4 || (int)get_data_width(node->rhs) == 4) {
+        printf("  cmp edi, eax\n");
+      } else {
+        printf("  cmp rdi, rax\n");
+      }
       printf("  setle al\n");
       printf("  movzb rax, al\n");
       break;
     case ND_GT:
       printf("  add rax, 1\n");
-      printf("  cmp rdi, rax\n");
+      if ((int)get_data_width(node->lhs) == 4 || (int)get_data_width(node->rhs) == 4) {
+        printf("  cmp edi, eax\n");
+      } else {
+        printf("  cmp rdi, rax\n");
+      }
       printf("  setge al\n");
       printf("  movzb rax, al\n");
       break;
