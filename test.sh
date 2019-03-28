@@ -34,6 +34,8 @@ try 5 "int main(){int *b; int a[2]; b = 0; *a = 2; b = a + 1; *b = 3; return *a 
 try 5 "int main(){int *b; int a[20]; b = 0; *a = 2; b = a + 19; *b = 3; return *a + *b;} "
 try 2 "int main(){int a[3]; *(a + 2) = 2; return *(a + 2);} "
 try 3 "int main() { int a[2]; *a = 1; *(a + 1) = 2; int *p; p = a; return *p + *(p + 1); }"
+try 2 "int main(){int a[3]; a[2] = 2; return a[2];} "
+try 3 "int main() { int a[2]; a[0] = 1; a[1] = 2; int *p; p = a; return p[0] + p[1]; }"
 
 show_title arithmetic_for_pointer
 try 7 "int main(){int *a; a = alloc4(7, 2, 3, 4); int *b; b = a; return *b;}"

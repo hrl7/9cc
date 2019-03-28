@@ -262,6 +262,8 @@ term: '*' term
 term: "(" add ")"
 term: num
 term: fnCall
+term: ident
+term: ident '[' add ']'
 
 fn_call: ident '(' args ')'
 
@@ -346,6 +348,13 @@ Node *term() {
     char *name = ((Token *)tokens->data[pos++])->input;
     if (consume('(')) {
       return new_node_fn_call(name, actual_args());
+    }
+    if (consume('[')) {
+      Node *index = add();
+      if (index == NULL) error(__LINE__, "expected 'add', but got %c", current_token()->input);
+      if (!consume(']')) error(__LINE__, "expected ']', but got %c", current_token()->input);
+
+      return new_node_deref(new_node('+', new_node_ident(name), index));
     }
     return new_node_ident(name);
   }
