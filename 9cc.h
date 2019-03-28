@@ -45,6 +45,7 @@ typedef struct Node {
   struct Node *lhs;
   struct Node *rhs;
   int val;
+  int offset;
   char *name; // IDENT, FN_CALL function name
   struct Vector *args; // Vector of Node for FN_CALL, FN_DECL
   struct Vecotr *body; // Vector of Node for FN_DECL, ND_IF, ND_WHILE, ND_FOR
@@ -83,6 +84,7 @@ typedef struct Record {
   int offset;
   char *name;
   Type *type;
+  int is_arg;
 } Record;
 
 Node *add();
@@ -101,6 +103,10 @@ Node *new_node_ident(char *name);
 Type *new_int_type();
 Type *new_ptr_type(Type *ptr_of);
 
+size_t get_data_width(Node *node);
+size_t get_data_width_by_record(Record *rec);
+size_t get_data_width_by_type(Type *type);
+
 Vector *new_vector();
 void vec_push(Vector *vec, void *elm);
 
@@ -108,7 +114,7 @@ Map *new_map();
 void map_put(Map *map, char *key, void *val);
 void *map_get(Map *map, char *key);
 
-Record *new_record(char *name, int offset, Type *type);
+Record *new_record(char *name, int offset, Type *type, int is_arg);
 Record *get_record(Context *ctx, char *name);
 void free_vector(Vector *vec);
 

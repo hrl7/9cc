@@ -258,9 +258,9 @@ mul: mul "*" term
 mul: mul "/" term
 
 term: '&' term
+term: '*' term
 term: "(" add ")"
 term: num
-term: '*' ident
 term: fnCall
 
 fn_call: ident '(' args ')'
@@ -521,7 +521,7 @@ Vector *stmt(Context *ctx) {
     node = var_decl();
     if (node != NULL) {
       vec_push(stmts, node);
-      Record *rec = new_record(node->name, 0, node->data_type);
+      Record *rec = new_record(node->name, 0, node->data_type, 0);
       map_put(ctx->vars, node->name, rec);
       consume_and_assert(__LINE__, ';');
       continue;

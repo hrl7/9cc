@@ -16,25 +16,49 @@ void assert_rec_exist(Record *rec, char *name) {
   }
 }
 
+void not_implemented_yet(int line) {
+    fprintf(stderr, "%s %d: not implemented yet\n", __FILE__, line);
+    printf("%s %d: not implemented yet\n", __FILE__, line);
+    exit(1);
+}
+
 void gen_lval(Node *node) {
   if (node->ty != ND_IDENT && node->ty != ND_ARG && node->ty != ND_DEREF) {
     error_node(__LINE__, "left value is not variable", node->ty);
   }
-  char *name;
+  int offset = 0;
   if (node->ty == ND_IDENT || node->ty == ND_ARG) {
-    name = node->name;
-  } else if (node->ty == ND_DEREF) {
-    name = node->lhs->name;
+    char *name = node->name;
+    Record *rec = map_get(variables, name);
+    assert_rec_exist(rec, name);
+    printf("  mov rax, rbp # \n", rec->offset);
+    printf("  sub rax, %d# address of var %s\n", rec->offset, name);
+    printf("  push rax\n");
+    return;
   }
-  Record *rec = map_get(variables, name);
-  assert_rec_exist(rec, name);
-  printf("  mov rax, rbp # \n", rec->offset);
-  printf("  sub rax, %d# address of var %s\n", rec->offset, name);
-  while (node != NULL && node->ty == ND_DEREF) {
-    printf("  mov rax, [rax]\n");
-    node = node->lhs;
+
+  if (node->ty == ND_DEREF) {
+    int node_ty = node->lhs->ty;
+    if (node_ty == ND_IDENT) {
+      char *name = node->lhs->name;
+      Record *rec = map_get(variables, name);
+      assert_rec_exist(rec, name);
+      printf("  mov rax, rbp # \n", rec->offset);
+      printf("  sub rax, %d# address of var %s\n", rec->offset, name);
+      while (node != NULL && node->ty == ND_DEREF) {
+        printf("  mov rax, [rax]\n");
+        node = node->lhs;
+      }
+      printf("  push rax\n");
+      return;
+    }
+
+    if (node_ty == '+' || node_ty == '-') {
+        gen(node->lhs);
+        return;
+    }
   }
-  printf("  push rax\n");
+  not_implemented_yet(__LINE__);
 }
 
 size_t get_data_width_by_type(Type *type) {
@@ -101,43 +125,41 @@ void gen_fn_decl(Node *node) {
     Record *rec;
     for (int i = 0; i < local_vars->keys->len; i++) {
       rec = local_vars->vals->data[i];
-      offset += (int)get_data_width_by_record(rec);
-      rec->offset = offset;
       printf("# local vars %d, %s, offset:%d ,type:%d\n", i, rec->name, rec->offset, rec->type->ty);
+      if (rec->is_arg) continue;
       map_put(variables, rec->name, rec);
-      if (rec->type->ty == ARRAY) {
-        offset += rec->type->array_size * get_data_width_by_type(rec->type->ptr_of);
-      }
+      offset = rec->offset;
     };
     if (args != NULL) {
       Node *arg_node;
-      int bp_offset;
       for (int i = 0; i < num_args; i++) {
+        printf("# args %d\n", i);
         arg_node = args->data[i];
-        bp_offset = offset + 8 * i;
-        rec = new_record(arg_node->name, bp_offset, arg_node->data_type);
-        map_put(variables, arg_node->name, rec);
-        printf("# arg %d, %s, offset:%d ,type:%d\n", i, rec->name, rec->offset, rec->type->ty);
-        if (i == 0) printf("  mov [rbp-%d], rdi # 1st arg\n", bp_offset);
-        if (i == 1) printf("  mov [rbp-%d], rsi # 2nd arg\n", bp_offset);
-        if (i == 2) printf("  mov [rbp-%d], rdx # 3rd arg\n", bp_offset);
-        if (i == 3) printf("  mov [rbp-%d], rcx # 4th arg\n", bp_offset);
-        if (i == 4) printf("  mov [rbp-%d], r8 # 5th arg\n", bp_offset);
-        if (i == 5) printf("  mov [rbp-%d], r9 # 6th arg\n", bp_offset);
+        var_name = arg_node->name;
+        rec = map_get(local_vars, var_name);
+        assert_rec_exist(rec, var_name);
+        offset = rec->offset;
+        map_put(variables, var_name, rec);
+        printf("# arg %d, %s, offset:%d ,type:%d\n", i, var_name, offset, arg_node->data_type->ty);
+        if (i == 0) printf("  mov [rbp-%d], rdi # 1st arg\n", offset);
+        if (i == 1) printf("  mov [rbp-%d], rsi # 2nd arg\n", offset);
+        if (i == 2) printf("  mov [rbp-%d], rdx # 3rd arg\n", offset);
+        if (i == 3) printf("  mov [rbp-%d], rcx # 4th arg\n", offset);
+        if (i == 4) printf("  mov [rbp-%d], r8 # 5th arg\n", offset);
+        if (i == 5) printf("  mov [rbp-%d], r9 # 6th arg\n", offset);
       }
-      offset = bp_offset;
     }
-    printf("  sub rsp, %d\n", offset);
     for (int i = 0; i < local_vars->keys->len; i++) {
       rec = map_get(variables, rec->name);
       assert_rec_exist(rec, rec->name);
       if(rec->type->ty == ARRAY) {
-        printf("mov rax, rbp\n");
-        printf("sub rax, %d\n", rec->offset + (int)get_data_width_by_record(rec) * rec->type->array_size );
-        printf("mov [rbp-%d], rax\n", rec->offset);
+        offset = rec->offset + 8 + (int)get_data_width_by_record(rec) * (rec->type->array_size - 1);
+        printf("  mov rax, rbp\n");
+        printf("  sub rax, %d # last elem of %s\n", offset, rec->name);
+        printf("  mov [rbp-%d], rax\n", rec->offset);
       }
     };
-
+    printf("  sub rsp, %d\n", offset);
     Vector *body = node->body;
     if (body != NULL) {
       for (int i = 0; i < body->len; i++) {

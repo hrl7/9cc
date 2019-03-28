@@ -31,12 +31,16 @@ try 7 "int main(){int a[10]; return 7;} "
 try 2 "int main(){int a[2]; *a = 2; return *a;} "
 try 3 "int main(){int a[2]; *a = 2; a = a + 1; *a = 3; return *a;} "
 try 5 "int main(){int *b; int a[2]; b = 0; *a = 2; b = a + 1; *b = 3; return *a + *b;} "
-#try 2 "int main(){int a[2]; *(a + 1) = 2; return *(a + 1);} "
+try 5 "int main(){int *b; int a[20]; b = 0; *a = 2; b = a + 19; *b = 3; return *a + *b;} "
+try 2 "int main(){int a[3]; *(a + 2) = 2; return *(a + 2);} "
+try 3 "int main() { int a[2]; *a = 1; *(a + 1) = 2; int *p; p = a; return *p + *(p + 1); }"
 
 show_title arithmetic_for_pointer
 try 7 "int main(){int *a; a = alloc4(7, 2, 3, 4); int *b; b = a; return *b;}"
 try 2 "int main(){int *a; a = alloc4(1, 2, 3, 4); int *b; b = a + 1; return *b;}"
 try 3 "int main(){int *a; a = alloc4(1, 2, 3, 4); int *b; b = 2 + a; return *b;}"
+try 4 "int main(){int *a; a = alloc4(1, 2, 3, 4); int *b; b = a + 3; return *b;}"
+try 4 "int main(){int *a; a = alloc4(1, 2, 3, 4); int *b; b = a + 2 + 1; return *b;}"
 try 4 "int main(){int *a; a = alloc4(1, 2, 3, 4); int *b; b = 1 + a + 2; return *b;}"
 try 4 "int main(){int *a; a = alloc4(1, 2, 3, 4); int *b; b = 1 + a + 1 * 2; return *b;}"
 

@@ -57,13 +57,14 @@ void vec_push(Vector *vec, void *elm) {
   vec->data[vec->len++] = elm;
 }
 
-Record *new_record(char *name, int offset, Type *type) {
+Record *new_record(char *name, int offset, Type *type, int is_arg) {
   Record *rec = malloc(sizeof(Record));
   rec->name = malloc(sizeof(char) * (strlen(name) + 1));
   rec->type = malloc(sizeof(Type));
   rec->offset = offset;
   rec->type = type;
   strcpy(rec->name, name);
+  rec->is_arg = is_arg;
   return rec;
 }
 
@@ -72,7 +73,7 @@ Record *get_record(Context *ctx, char *name) {
   Record *rec;
   do {
     rec = map_get(cur->vars, name);
-    cur = ctx->parent;
+    cur = cur->parent;
   } while(rec == NULL && cur != NULL && cur->vars != NULL);
   if (rec == NULL) {
     fprintf(stderr, "got unexpected record: %s\n", name);
@@ -148,7 +149,7 @@ void test_context() {
   strcpy(name, "test");
   Type *t = new_int_type();
   expect(__LINE__, 0, t->ty);
-  Record *rec = new_record(name, 4, t);
+  Record *rec = new_record(name, 4, t, 0);
   map_put(ctx->vars, name, rec);
   Record *trec;
   trec = get_record(ctx, name);

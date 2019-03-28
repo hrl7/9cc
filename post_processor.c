@@ -70,8 +70,6 @@ char *debug_type(Context *ctx, Node *node) {
   }
 
   if (node->ty == ND_VAR_DECL) {
-
-    printf("# args %x\n", node->args);
     if (node->args != NULL) {
       printf("# args length %d\n", node->args->len);
     }
@@ -82,11 +80,13 @@ char *debug_type(Context *ctx, Node *node) {
   exit(1);
 }
 
+// returns addr width. if give node is not addr value, return 0
 int get_addr_width(Context *ctx, Node *node) {
   if (node->ty == ND_NUM ||
       node->ty == ND_EQ || node->ty == ND_NEQ ||
       node->ty == ND_GE || node->ty == ND_LE ||
-      node->ty == ND_GT || node->ty == ND_LT) {
+      node->ty == ND_GT || node->ty == ND_LT ||
+      node->ty == '*' || node->ty == '/') {
     return 0;
   }
 
@@ -115,11 +115,19 @@ int get_addr_width(Context *ctx, Node *node) {
   }
 
   if (node->ty == ND_DEREF) {
-    Record *rec = get_record(ctx, node->lhs->name);
-    if (rec->type->ptr_of->ty == INT) {
-      return 0;
+    node = node->lhs;
+    printf("# get addr width DEREF %d %c\n", node->ty, node->ty);
+    if (node->ty == ND_IDENT) {
+      Record *rec = get_record(ctx, node->name);
+      if (rec->type->ptr_of->ty == INT) {
+        return 0;
+      }
+    } else {
+      if (get_addr_width(ctx, node) <= 4) {
+        return 0;
+      };
     }
-    printf("%s, %d: not implemented yet\n", __FILE__, __LINE__);
+    printf("%s, %d: not implemented yet for node type %d %c\n", __FILE__, __LINE__, node->ty, node->ty);
     exit(1);
   }
 
@@ -127,8 +135,10 @@ int get_addr_width(Context *ctx, Node *node) {
     int lhs_width = get_addr_width(ctx, node->lhs);
     int rhs_width = get_addr_width(ctx, node->rhs);
     printf("# lhs width %d, rhs width %d\n", lhs_width, rhs_width);
-    if (lhs_width == 0) return rhs_width;
-    if (rhs_width == 0) return lhs_width;
+    if (lhs_width > rhs_width) {
+      return lhs_width;
+    }
+    return rhs_width;
   }
   printf("%s, %d: not implemented node type %d %c\n", __FILE__, __LINE__, node->ty, node->ty);
   exit(1);
@@ -136,27 +146,30 @@ int get_addr_width(Context *ctx, Node *node) {
 
 void traverse_fn_decl(Context *ctx, Node *node) {
   // Map<char*, Record>
-  printf("# node ty %d ctx: %x %s\n", node->ty, ctx, node->ctx->name);
   Map *variables = ctx->vars;
   Vector *args = node->args;
   int num_args = args == NULL ? 0 : args->len;
   int offset = 8;
   char *var_name;
   Record *rec;
-  for (int i = 0; i < variables->keys->len; i++) {
-    var_name = variables->keys->data[i];
-    printf("# local vars %d %s, offset: %d\n", i, var_name, offset);
-    rec = map_get(variables, var_name);
-    printf("# %s\n", rec->name);
-    if (rec == NULL) {
-      fprintf(stderr, "got invalid ident %s\n", var_name);
-      printf("got invalid ident %s at postprocess\n", var_name);
-      exit(1);
-    }
-    rec->offset = offset;
-    printf("# traverse fn decl rec->offset %d\n", rec->offset);
-    offset += 8;
-  };
+  if (variables != NULL) {
+    for (int i = 0; i < variables->keys->len; i++) {
+      var_name = variables->keys->data[i];
+      printf("# local vars %d %s, offset: %d\n", i, var_name, offset);
+      rec = map_get(variables, var_name);
+      if (rec == NULL) {
+        fprintf(stderr, "got invalid ident %s\n", var_name);
+        printf("got invalid ident %s at postprocess\n", var_name);
+        exit(1);
+      }
+      offset += (int)get_data_width_by_record(rec);
+      rec->offset = offset;
+      if (rec->type->ty == ARRAY) {
+        printf("# array_of  size: %d, array_size %d\n",  get_data_width_by_type(rec->type->ptr_of), rec->type->array_size);
+        offset += rec->type->array_size * get_data_width_by_type(rec->type->ptr_of);
+      }
+    };
+  }
   if (args != NULL) {
     Node *arg_node;
     int bp_offset;
@@ -164,9 +177,9 @@ void traverse_fn_decl(Context *ctx, Node *node) {
       arg_node = args->data[i];
       bp_offset = offset + 8 * i;
       var_name = arg_node->name;
-      rec = new_record(var_name, bp_offset, arg_node->data_type);
-      map_put(variables, arg_node->name, rec);
-      printf("# arg %d, %s at post process\n", i, arg_node->name);
+      rec = new_record(var_name, bp_offset, arg_node->data_type, 1);
+      map_put(variables, var_name, rec);
+      printf("# arg %d, %s, offset: %d at post process\n", i, arg_node->name, bp_offset);
     }
     offset = bp_offset;
   }
@@ -177,15 +190,17 @@ void traverse_node(Context *ctx, Node *node) {
   switch(node->ty) {
     case ND_FN_DECL:
       printf("# fn decl %s\n", node->name);
-      printf("# ctx: %x\n", ctx);
-      return traverse_fn_decl(ctx, node);
+      return traverse_fn_decl(node->ctx, node);
     case ND_FN_CALL:
       return;
     case ND_VAR_DECL:
       printf("# var decl %s: %s\n", node->name, debug_type(ctx, node));
       return;
-    case ND_REF:
-      printf("# reference\n");
+    case ND_RET:
+      traverse_node(ctx, node->body);
+      return;
+    case ND_DEREF:
+      traverse_node(ctx, node->lhs);
       return;
     case ND_IDENT:
       printf("# identifier %s, type: %s\n", node->name, debug_type(ctx, node));
@@ -200,44 +215,38 @@ void traverse_node(Context *ctx, Node *node) {
       printf("# +,- left hand type: %s, right hand type: %s\n",
         debug_type(ctx, node->lhs),
         debug_type(ctx, node->rhs));
-      int width = get_addr_width(ctx, node->lhs);
-      printf("# node->lhs width %d\n", width);
-      if (width != 0) {
-        node->rhs = new_node('*', new_node_num(width), node->rhs);
+      int lhs_width = get_addr_width(ctx, node->lhs);
+      printf("# node->lhs width %d\n", lhs_width);
+      int rhs_width = get_addr_width(ctx, node->rhs);
+      printf("# node->rhs width %d\n", rhs_width);
+      if (lhs_width != 0 && rhs_width == 0) {
+        printf("# multiply rhs\n");
+        node->rhs = new_node('*', new_node_num(lhs_width), node->rhs);
         traverse_node(ctx, node->lhs);
         return;
       }
-      printf("# node->rhs width %d\n", width);
-      width = get_addr_width(ctx, node->rhs);
-      if (width != 0) {
-        node->lhs = new_node('*', new_node_num(width), node->lhs);
+      if (rhs_width != 0 && lhs_width == 0) {
+        printf("# multiply lhs\n");
+        node->lhs = new_node('*', new_node_num(rhs_width), node->lhs);
         traverse_node(ctx, node->rhs);
         return;
       }
+      traverse_node(ctx, node->lhs);
+      traverse_node(ctx, node->rhs);
       return;
 
+    case ND_REF:
     case ND_IF:
-      printf("# if\n");
-      return;
     case ND_WHILE:
-      printf("# while\n");
-      return;
     case ND_FOR:
-      printf("# for \n");
-      return;
-    case ND_RET:
-      printf("# return\n");
-      return;
-
     case ND_EQ:
     case ND_NEQ:
     case ND_LT:
     case ND_GT:
     case ND_LE:
     case ND_GE:
-      printf("# if\n");
+    default:
       return;
-
   }
 }
 

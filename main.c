@@ -32,7 +32,6 @@ int main(int argc, char **argv) {
 
   post_process(global_ctx, code);
 
-
   printf(".intel_syntax noprefix\n");
 #ifdef __APPLE__
   printf(".global _main\n");
