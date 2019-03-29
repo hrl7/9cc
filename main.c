@@ -1,9 +1,7 @@
 #include "9cc.h"
 
-int pos;
-int branch_id = 0;
-Vector *tokens;
-Vector *scopes;
+int pos, branch_id = 0;
+Vector *tokens, *scopes;
 Node *code[100];
 Map *variables;
 Context *global_ctx;
@@ -19,6 +17,7 @@ int main(int argc, char **argv) {
   }
 
   global_ctx = new_context("global");
+  global_ctx->parent = NULL;
   scopes = new_vector();
   printf("# src => %s\n", argv[1]);
   variables = new_map();
@@ -39,22 +38,42 @@ int main(int argc, char **argv) {
   printf(".global main\n");
 #endif
 
+  Node *node, **fns, **vars;
+  Record *rec;
+  int num_fn_decls = 1, num_global_vars = 1;
   for (int i = 0; code[i]; i++) {
-    gen_fn_decl(code[i]);
+    node = code[i];
+    if (node->ty == ND_FN_DECL) num_fn_decls++;
+    if (node->ty == ND_VAR_DECL) {
+      rec = map_get(global_ctx->vars, node->name);
+      if (rec != NULL) num_global_vars++;
+    }
   }
 
-/*
+  fns = malloc(sizeof(Node *) * num_fn_decls);
+  vars = malloc(sizeof(Node *) * num_global_vars);
 
-  printf("\n# function prologue\n");
-  printf("  push rbp\n");
-  printf("  mov rbp, rsp\n");
-  printf("  sub rsp, %d\n", variables->keys->len * 8);
+  int fi = 0, vi = 0;
+  for (int i = 0; code[i]; i++) {
+    node = code[i];
+    if (node->ty == ND_FN_DECL) fns[fi++] = node;
+    if (node->ty == ND_VAR_DECL && map_get(global_ctx->vars, node->name) != NULL) {
+      vars[vi++] = node;
+    }
+  }
 
+  fns[fi] = NULL;
+  vars[vi] = NULL;
 
-  printf("\n# function epilogue\n");
-  printf("  mov rsp, rbp\n");
-  printf("  pop rbp\n");
-  printf("  ret\n");
-  */
+  for (int i = 0; fns[i]; i++) {
+    gen_fn_decl(fns[i]);
+  }
+
+  if (vi != 0) {
+    printf(".bss\n");
+    for (int i = 0; vars[i]; i++) {
+      gen_global_var_decl(vars[i]);
+    }
+  }
   return 0;
 }

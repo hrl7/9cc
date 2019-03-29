@@ -123,6 +123,7 @@ void runtest();
 
 extern Vector *scopes;
 extern Map *variables;
+extern Context *global_ctx;
 extern int pos;
 extern int branch_id;
 extern Node *code[100];

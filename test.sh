@@ -26,6 +26,11 @@ echo $1
 echo "*****************"
 }
 
+show_title global_variables
+try 7 "int g; int main(){g = 8; return 7;} "
+try 8 "int g; int h; int main(){g = 8; return g;} "
+try 7 "int *g; int main(){int a[10]; a[5] = 7; g = a + 5; return *g;} "
+
 show_title array
 try 7 "int main(){int a[10]; return 7;} "
 try 2 "int main(){int a[2]; *a = 2; return *a;} "
@@ -135,5 +140,6 @@ try 55 "int main() {int i; int sum; i = 0; sum = 0; for(i=10;i >= 0; i = i - 1) 
 show_title recursion
 try 120 "int fact(int n){if(n>0){return n*fact(n-1);}else{return 1;}} int main(){return fact(5);}"
 try 6 "int fact(int n){if(n>0){return n*fact(n-1);}else{return 1;}} int main(){return fact(3);}"
+
 
 echo OK

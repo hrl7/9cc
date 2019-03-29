@@ -186,6 +186,12 @@ void traverse_fn_decl(Context *ctx, Node *node) {
   traverse_nodes(node->ctx, node->body);
 }
 
+void traverse_global_var(Context *ctx, Node *node){
+  Record *rec = new_record(node->name, -1, node->data_type, 0);
+  map_put(ctx->vars, node->name, rec);
+  printf("# put global vars\n");
+}
+
 void traverse_node(Context *ctx, Node *node) {
   switch(node->ty) {
     case ND_FN_DECL:
@@ -194,7 +200,13 @@ void traverse_node(Context *ctx, Node *node) {
     case ND_FN_CALL:
       return;
     case ND_VAR_DECL:
-      printf("# var decl %s: %s\n", node->name, debug_type(ctx, node));
+    printf("# ctx->parent: %x, ctx->name %s, var name %s\n", ctx->parent, ctx->name, node->name);
+      if (ctx->parent == NULL) {
+        traverse_global_var(ctx, node);
+      } else {
+
+    printf("# ctx->parent: %x, ctx->name %s, var name %s\n", ctx->parent->parent, ctx->parent->name, node->name);
+      }
       return;
     case ND_RET:
       traverse_node(ctx, node->body);

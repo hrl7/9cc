@@ -206,6 +206,7 @@ void error_with_msg(int line, char *str) {
 /*
 program: e
 program: fn_decl program
+program: var_decl program
 
 #fn_def: fn_decl block
 #block: '{' stmt '}'
@@ -582,7 +583,6 @@ Node *fn_decl(Context *ctx) {
   if (fn_name != NULL && current_token()->ty == '(') {
     Node *args = formal_args();
     if (consume('{')) { Context *local_ctx = new_context(fn_name->name);
-    printf("# ctx %x\n", ctx);
       local_ctx->parent = ctx;
       Vector *body = stmt(local_ctx);
       if (consume('}')) {
@@ -591,14 +591,24 @@ Node *fn_decl(Context *ctx) {
       error(__LINE__, "no corresponding closing brace %s", current_token()->input);
     }
   }
-  error(__LINE__, "no corresponding closing paren %s", current_token()->input);
+  pos = last_pos;
+  return NULL;
 }
 
 void program(Context *ctx) {
   int i = 0;
   Token *token = tokens->data[pos];
+  Node *node;
   while (token->ty != TK_EOF) {
-    code[i++] = fn_decl(ctx);
+    node  = fn_decl(ctx);
+    if (node == NULL) {
+      node = var_decl();
+      if (!consume(';')) error(__LINE__, "expected ';', but got %c", current_token()->input);
+    }
+    if (node == NULL) {
+      error(__LINE__, "failed to parse at %c", current_token()->input);
+    }
+    code[i++] = node;
     token = tokens->data[pos];
   }
   code[i] = NULL;
