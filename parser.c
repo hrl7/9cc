@@ -132,6 +132,7 @@ Node *new_node_var_decl(Type *type, Node *ident) {
   node->ty = ND_VAR_DECL;
   node->name = ident->name;
   node->data_type = type;
+  node->init = NULL;
   return node;
 }
 
@@ -649,7 +650,11 @@ void program(Context *ctx) {
     node  = fn_decl(ctx);
     if (node == NULL) {
       node = var_decl();
-      if (!consume(';')) error(__LINE__, "expected ';', but got %c", current_token()->input);
+      if (!consume(';')) {
+        consume_and_assert(__LINE__, ('='));
+        node->init = cmp();
+        consume_and_assert(__LINE__, ';');
+      }
     }
     if (node == NULL) {
       error(__LINE__, "failed to parse at %c", current_token()->input);

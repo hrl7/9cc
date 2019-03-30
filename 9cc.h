@@ -52,7 +52,7 @@ typedef struct Node {
   struct Vector *args; // Vector of Node for FN_CALL, FN_DECL
   struct Vecotr *body; // Vector of Node for FN_DECL, ND_IF, ND_WHILE, ND_FOR
   struct Node *cond; // Condition for ND_IF, ND_WHILE, ND_FOR
-  struct Node *init; // ND_FOR
+  struct Node *init; // ND_FOR, ND_VAR_DECL
   struct Node *updater; // ND_FOR
   struct Vector *els; // else clause for ND_IF
   struct Context *ctx;

@@ -287,7 +287,24 @@ void gen_global_var_decl(Node *node) {
   Record *rec = lookup_var(node->name);
   printf("%s:\n", rec->name);
   int width = (int)get_data_width_by_record(rec);
-  printf("  .zero %d\n", width);
+  if (node->init == NULL) {
+    printf("  .zero %d\n", width);
+    return;
+  }
+
+  Node *init = node->init;
+  if (init->ty == ND_NUM || init->ty == ND_CHAR) {
+    switch (width) {
+      case 1:
+        printf("  .byte %d\n", init->val);
+        return;
+      case 4:
+        printf("  .long %d\n", init->val);
+        return;
+      default:
+        not_implemented_yet(__LINE__);
+    }
+  }
 }
 
 void gen(Node *node) {

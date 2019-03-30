@@ -70,7 +70,7 @@ int main(int argc, char **argv) {
   }
 
   if (vi != 0) {
-    printf(".bss\n");
+    printf(".data\n");
     for (int i = 0; vars[i]; i++) {
       gen_global_var_decl(vars[i]);
     }

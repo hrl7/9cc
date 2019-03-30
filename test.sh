@@ -29,6 +29,7 @@ echo "*****************"
 show_title initialization
 try 9 "int main() { int a = 9; return a;}";
 try 9 "int main() { int a = 3 + 6; return a;}";
+try 13 "int x = 13; int main() { return x;}";
 
 show_title char
 try 3 "int main() { char a; return 3;}";
