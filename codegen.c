@@ -78,6 +78,8 @@ void gen_lval(Node *node) {
 
 size_t get_data_width_by_type(Type *type) {
   switch(type->ty) {
+    case CHAR:
+      return 1;
     case INT:
       return 4;
     case PTR:
@@ -304,20 +306,37 @@ void gen(Node *node) {
     printf("  push %d\n", node->val);
     return;
   }
+  if (node->ty == ND_CHAR) {
+    printf("  push %d\n", node->val);
+    return;
+  }
 
   if (node->ty == ND_IDENT) {
     Record *rec = lookup_var(node->name);
+    int width = get_data_width_by_record(rec);
     if (rec->offset == -1) {
-      if ((int)get_data_width_by_record(rec) == 4) {
-        printf("  mov eax, %s[rip] # var %s\n", node->name);
-      } else {
-        printf("  mov rax, %s[rip] # var %s\n", node->name);
+      switch(width) {
+        case 1:
+          printf("  mov ax, %s[rip] # var %s\n", node->name);
+          break;
+        case 4:
+          printf("  mov eax, %s[rip] # var %s\n", node->name);
+          break;
+        case 8:
+          printf("  mov rax, %s[rip] # var %s\n", node->name);
+          break;
       }
     } else {
-      if ((int)get_data_width_by_record(rec) == 4) {
-        printf("  mov eax, [rbp-%d] # var %s\n", rec->offset, node->name);
-      } else {
-        printf("  mov rax, [rbp-%d] # var %s\n", rec->offset, node->name);
+      switch(width) {
+        case 1:
+          printf("  mov ax, [rbp-%d] # var %s\n", rec->offset, node->name);
+          break;
+        case 4:
+          printf("  mov eax, [rbp-%d] # var %s\n", rec->offset, node->name);
+          break;
+        case 8:
+          printf("  mov rax, [rbp-%d] # var %s\n", rec->offset, node->name);
+          break;
       }
     }
     printf("  push rax\n");
@@ -386,10 +405,17 @@ void gen(Node *node) {
     printf("  pop rax\n");
     if (node->lhs->ty == ND_IDENT) {
       Record *rec = lookup_var(node->lhs->name);
-      if (rec->type->ty == INT) {
-        printf("  mov [rax], edi\n");
-      } else {
-        printf("  mov [rax], rdi\n");
+      int width = get_data_width_by_record(rec);
+      switch(width) {
+        case 1:
+          printf("  movb [rax], dil\n");
+          break;
+        case 4:
+          printf("  mov [rax], edi\n");
+          break;
+        case 8:
+          printf("  mov [rax], rdi\n");
+          break;
       }
     } else {
       printf("  mov [rax], rdi\n");

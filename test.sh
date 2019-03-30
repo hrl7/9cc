@@ -26,6 +26,14 @@ echo $1
 echo "*****************"
 }
 
+show_title char
+try 3 "int main() { char a; return 3;}";
+try 3 "int main() { char a; a = 3; return 3;}";
+try 3 "int main() { char a; a = 3; return a;}";
+try 120 "int main() { char a; a = 'x'; return a; }"
+try 3 "int main() {char x[3];x[0] = -1;x[1] = 2;int y;y = 4;x[0] + y;}"
+try 97 "int main() {char d; char c; int a; d = 'a'; c = 123; a = 20; return d;}"
+
 show_title global_variables
 try 7 "int g; int main(){g = 8; return 7;} "
 try 8 "int g; int h; int main(){g = 8; return g;} "

@@ -4,9 +4,9 @@ extern void traverse_node(Context *ctx, Node *node);
 extern void traverse_nodes(Context *ctx, Vector *nodes);
 
 char *debug_ptr_type(Type *type) {
-  if (type->ty == INT) {
-    return "int";
-  }
+  if (type->ty == INT) return "int";
+  if (type->ty == CHAR) return "char";
+
   if (type->ty == PTR) {
     char *type_name = debug_ptr_type(type->ptr_of);
     char *str = malloc(sizeof(char) * 100);
@@ -37,6 +37,8 @@ char *debug_type(Context *ctx, Node *node) {
       exit(1);
     }
     switch(rec->type->ty) {
+      case CHAR:
+        return "char variable";
       case INT:
         return "int variable";
       case PTR:
@@ -103,6 +105,8 @@ int get_addr_width(Context *ctx, Node *node) {
       }
 
       switch(t->ty) {
+        case CHAR:
+          return 1;
         case INT:
           return 4;
         case PTR:

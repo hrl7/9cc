@@ -18,6 +18,13 @@ Node *new_node_num(int val) {
   return node;
 }
 
+Node *new_node_char(char val) {
+  Node *node = malloc(sizeof(Node));
+  node->ty = ND_CHAR;
+  node->val = val;
+  return node;
+}
+
 Node *new_node_fn_call(char *name, Vector *arguments) {
   Node *node = malloc(sizeof(Node));
   node->ty = ND_FN_CALL;
@@ -135,6 +142,13 @@ Type *new_int_type() {
   return type;
 }
 
+Type *new_char_type() {
+  Type *type = malloc(sizeof(Type));
+  type->ty = CHAR;
+  type->ptr_of = NULL;
+  return type;
+}
+
 Type *new_ptr_type(Type *ptr_of) {
   Type *type = malloc(sizeof(Type));
   type->ty = PTR;
@@ -152,6 +166,10 @@ Type *new_arr_type(Type *ptr_of, size_t array_size) {
 
 Token *current_token() {
   return (Token *)tokens->data[pos];
+}
+
+Token *next_token() {
+  return (Token *)tokens->data[pos+1];
 }
 
 void consume_and_assert(int line, char c) {
@@ -266,6 +284,9 @@ term: fnCall
 term: ident
 term: ident '[' add ']'
 
+num: -num
+num: [0-9]*
+
 fn_call: ident '(' args ')'
 
 args: e
@@ -327,6 +348,17 @@ Node *term() {
   }
 
   Token *token = current_token();
+  if (token->ty == TK_CHAR) {
+    token = tokens->data[pos++];
+    return new_node_char(token->val);
+  }
+
+  if (token->ty == '-' && next_token()->ty == TK_NUM) {
+    token = tokens->data[pos+1];
+    pos += 2;
+    return new_node_num(-1 * (token->val));
+  }
+
   if (token->ty == TK_NUM) {
     token = tokens->data[pos++];
     return new_node_num(token->val);
@@ -468,16 +500,20 @@ Node *ret() {
 }
 
 Type *type_annot() {
+  Type *type;
   if (consume_keyword("int")) {
-    Type *type = new_int_type();
-    Type *_type;
-    while(consume('*')) {
-      _type = type;
-      type = new_ptr_type(_type);
-    }
-    return type;
+    type = new_int_type();
+  } else if (consume_keyword("char")) {
+    type = new_char_type();
+  } else {
+    return NULL;
   }
-  return NULL;
+  Type *_type;
+  while(consume('*')) {
+    _type = type;
+    type = new_ptr_type(_type);
+  }
+  return type;
 }
 
 Node *var_decl() {

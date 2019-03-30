@@ -11,6 +11,7 @@ enum {
   TK_NEQ, // !=
   TK_GE, // <= greater or equal
   TK_LE, // <= less or equal
+  TK_CHAR,
 };
 
 typedef struct Token {
@@ -37,7 +38,8 @@ enum {
   ND_VAR_DECL = 270,
   ND_REF = 271,
   ND_DEREF = 272,
-  ND_ARG,
+  ND_ARG = 273,
+  ND_CHAR = 274,
 };
 
 typedef struct Node {
@@ -58,7 +60,7 @@ typedef struct Node {
 } Node;
 
 typedef struct Type {
-  enum { INT, PTR, ARRAY } ty;
+  enum { INT, PTR, ARRAY, CHAR } ty;
   struct Type *ptr_of;
   size_t array_size;
 } Type;
