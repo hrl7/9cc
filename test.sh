@@ -26,6 +26,10 @@ echo $1
 echo "*****************"
 }
 
+show_title initialization
+try 9 "int main() { int a = 9; return a;}";
+try 9 "int main() { int a = 3 + 6; return a;}";
+
 show_title char
 try 3 "int main() { char a; return 3;}";
 try 3 "int main() { char a; a = 3; return 3;}";
@@ -60,9 +64,9 @@ try 4 "int main(){int *a; a = alloc4(1, 2, 3, 4); int *b; b = 1 + a + 2; return 
 try 4 "int main(){int *a; a = alloc4(1, 2, 3, 4); int *b; b = 1 + a + 1 * 2; return *b;}"
 
 show_title pointer
-try 7 "int main(){int a; a = 7; int *b; b = &a; return *b;}"
-try 7 "int main(){int a; a = 5; int *b; b = &a; return *b + 2;}"
-try 7 "int main(){int *a; a = allocate(4); *a = 7; return *a;}"
+try 7 "int main(){int a = 7; int *b = &a; return *b;}"
+try 7 "int main(){int a = 5; int *b = &a; return *b + 2;}"
+try 7 "int main(){int *a = allocate(4); *a = 7; return *a;}"
 # this should be segv
 # try 4 "int main(){int *a; *a = 4; return *a;}"
 try 7 "int main(){int *x; x = allocate(4); int *y; y = allocate(4); *x = 7; y = x; return *y;}"
@@ -109,7 +113,7 @@ try 0 "int main(){ return foo();}"
 try 7 "int main(){ return bar(3,4);}"
 try 10 "int add(int a,int b) {return  a + b; } int main() {return add(8, 2);}"
 try 6 "int sub(int a,int  b) {return a - b; } int main() {return sub(8, 2);}"
-try 10 "int sub(int a, int b) {return  a - b; } int main(){int x; x = sub(8, 2);return x + 4;}"
+try 10 "int sub(int a, int b) {return  a - b; } int main(){int x = sub(8, 2);return x + 4;}"
 try 0 "\
 int sub(int a, int b) { \
   return a - b; \
@@ -124,18 +128,18 @@ int main() {\
 }"
 
 show_title if-else
-try 1 "int main() {int b; b=1;if (1 == 0) b = 0 ; return b; }"
-try 0 "int main() {int b; b=1;if (0 == 0) b = 0 ; return b; }"
+try 1 "int main() {int b=1;if (1 == 0) b = 0 ; return b; }"
+try 0 "int main() {int b=1;if (0 == 0) b = 0 ; return b; }"
 
-try 0 "int main() {int b; b=1;if (1 != 0) b = 0 ; else b = 2; return b; }"
-try 2 "int main() {int b; b=1;if (0 != 0) b = 0 ; else b = 2; return b; }"
+try 0 "int main() {int b=1;if (1 != 0) b = 0 ; else b = 2; return b; }"
+try 2 "int main() {int b=1;if (0 != 0) b = 0 ; else b = 2; return b; }"
 
-try 1 "int main() {int b; b=1;if (1 == 0) {b = 0;} return b; }"
-try 0 "int main() {int b; b=1;if (0 == 0) {b = 0;} return b; }"
-try 2 "int main() {int b; b=1;if (0 == 0) {b = 0; if (b == 0) {b = 2;}} return b; }"
+try 1 "int main() {int b=1;if (1 == 0) {b = 0;} return b; }"
+try 0 "int main() {int b=1;if (0 == 0) {b = 0;} return b; }"
+try 2 "int main() {int b=1;if (0 == 0) {b = 0; if (b == 0) {b = 2;}} return b; }"
 
-try 0 "int main() {int b; b=1;if (1 != 0) b = 0 ; else { b = 2; } return b; }"
-try 2 "int main() {int b; b=1;if (0 != 0) b = 0 ; else { b = 2; } return b; }"
+try 0 "int main() {int b=1;if (1 != 0) b = 0 ; else { b = 2; } return b; }"
+try 2 "int main() {int b=1;if (0 != 0) b = 0 ; else { b = 2; } return b; }"
 
 show_title while-loop
 try 10 "int main() {int i; i = 0; while(i != 10) { i = i + 1; } return i; }"
@@ -143,7 +147,7 @@ try 66 "int main() {int sum; int i; sum = 0; i = 0; while(i <= 10) { i = i + 1; 
 
 show_title for-loop
 try 55 "int main() {int i; int sum; i = 0; sum = 0; for(i=0; i <=10; i = i + 1) { sum = sum + i; } return sum; }"
-try 55 "int main() {int i; int sum; i = 0; sum = 0; for(i=10;i >= 0; i = i - 1) { sum = sum + i; } return sum; }"
+try 55 "int main() {int i = 0 ; int sum = 0; for(i=10;i >= 0; i = i - 1) { sum = sum + i; } return sum; }"
 
 show_title recursion
 try 120 "int fact(int n){if(n>0){return n*fact(n-1);}else{return 1;}} int main(){return fact(5);}"

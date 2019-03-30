@@ -236,12 +236,15 @@ ptr: '*' ptr
 var_decl: type_annot ident
 var_decl: type_annot ident '[' term ']'
 
+init: var_decl '=' term
+
 stmt: e
 stmt: if_stmt stmt
 stmt: while_stmt stmt
 stmt: 'return' assign ';' stmt
 stmt: var_decl ';'
 stmt: assign ';' stmt
+stmt: init ';' stmt
 
 if_stmt: 'if' '(' assign ')' assign ';'
 if_stmt: 'if' '(' assign ')' '{' stmt '}'
@@ -569,6 +572,13 @@ Vector *stmt(Context *ctx) {
       vec_push(stmts, node);
       Record *rec = new_record(node->name, 0, node->data_type, 0);
       map_put(ctx->vars, node->name, rec);
+      if (consume(';')) {
+        continue;
+      }
+
+      consume_and_assert(__LINE__, ('='));
+      node = new_node('=', new_node_ident(node->name), cmp());
+      vec_push(stmts, node);
       consume_and_assert(__LINE__, ';');
       continue;
     }
