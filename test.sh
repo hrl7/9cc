@@ -5,7 +5,7 @@ try() {
   input="$2"
 
   ./9cc "$input" > tmp.s
-  gcc -o tmp tmp.s call-printf.o malloc.o
+  gcc -no-pie -o tmp tmp.s call-printf.o malloc.o
   ./tmp
   actual="$?"
 
@@ -25,6 +25,12 @@ echo "*****************"
 echo $1
 echo "*****************"
 }
+
+show_title string_literal
+try 97 "int main() { char *msg = \"abcd\"; return msg[0];}"
+try 0 "int main() { char *msg = \"piyopiyo\"; return 0;}"
+try 0 "int main() { char *msg = \"abcd\"; return msg[4];}"
+try 0 "int main() { printf(\"hello world\"); return 0;}"
 
 show_title initialization
 try 9 "int main() { int a = 9; return a;}";

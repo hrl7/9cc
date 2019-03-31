@@ -12,6 +12,7 @@ enum {
   TK_GE, // <= greater or equal
   TK_LE, // <= less or equal
   TK_CHAR,
+  TK_STRING,
 };
 
 typedef struct Token {
@@ -40,6 +41,7 @@ enum {
   ND_DEREF = 272,
   ND_ARG = 273,
   ND_CHAR = 274,
+  ND_STRING = 275,
 };
 
 typedef struct Node {
@@ -49,6 +51,7 @@ typedef struct Node {
   int val;
   int offset;
   char *name; // IDENT, FN_CALL function name
+  char *str;
   struct Vector *args; // Vector of Node for FN_CALL, FN_DECL
   struct Vecotr *body; // Vector of Node for FN_DECL, ND_IF, ND_WHILE, ND_FOR
   struct Node *cond; // Condition for ND_IF, ND_WHILE, ND_FOR
@@ -123,10 +126,9 @@ void free_vector(Vector *vec);
 int expect(int line, int expected, int actual);
 void runtest();
 
-extern Vector *scopes;
+extern Vector *scopes, *strings, *tokens;
 extern Map *variables;
 extern Context *global_ctx;
 extern int pos;
 extern int branch_id;
 extern Node *code[100];
-extern Vector *tokens;

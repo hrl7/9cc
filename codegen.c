@@ -76,6 +76,10 @@ void gen_lval(Node *node) {
   not_implemented_yet(__LINE__);
 }
 
+int get_str_id(char *str) {
+  return 0;
+}
+
 size_t get_data_width_by_type(Type *type) {
   switch(type->ty) {
     case CHAR:
@@ -275,6 +279,7 @@ void gen_fn_call(Node *node) {
       if (i == 3) printf("  mov rcx, [rsp] # 4th arg\n");
       if (i == 4) printf("  mov r8, [rsp] # 5th arg\n");
       if (i == 5) printf("  mov r9, [rsp] # 6th arg\n");
+      printf("  mov al, 0\n");
     }
     printf("  add rsp, %d\n", num_args * 8);
   }
@@ -325,6 +330,12 @@ void gen(Node *node) {
   }
   if (node->ty == ND_CHAR) {
     printf("  push %d\n", node->val);
+    return;
+  }
+  if (node->ty == ND_STRING) {
+    int id = get_str_id(node->str);
+    printf("  mov rax, OFFSET FLAT:.LC%d\n", id);
+    printf("  push rax\n");
     return;
   }
 

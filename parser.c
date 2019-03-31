@@ -136,6 +136,14 @@ Node *new_node_var_decl(Type *type, Node *ident) {
   return node;
 }
 
+Node *new_node_str(char *str) {
+  Node *node = malloc(sizeof(Node));
+  node->ty = ND_STRING;
+  node->str = malloc(sizeof(char)* strlen(str));
+  strcpy(node->str, str);
+  return node;
+}
+
 Type *new_int_type() {
   Type *type = malloc(sizeof(Type));
   type->ty = INT;
@@ -284,6 +292,7 @@ term: '&' term
 term: '*' term
 term: "(" add ")"
 term: num
+term: string
 term: fnCall
 term: ident
 term: ident '[' add ']'
@@ -333,6 +342,7 @@ Vector *actual_args() {
   }
   Vector *arguments = new_vector();
   do {
+    printf("# arg %d\n", current_token()->ty);
     vec_push(arguments, add());
   } while(consume(','));
   if (consume(')')) {
@@ -363,6 +373,11 @@ Node *term() {
     return new_node_num(-1 * (token->val));
   }
 
+  if (token->ty == TK_STRING) {
+    printf("# create token str. %s\n", token->input);
+    return new_node_str(((Token *)tokens->data[pos++])->input);
+  }
+
   if (token->ty == TK_NUM) {
     token = tokens->data[pos++];
     return new_node_num(token->val);
@@ -381,6 +396,7 @@ Node *term() {
   }
 
   token = current_token();
+
   if (token->ty == TK_IDENT) {
     char *name = ((Token *)tokens->data[pos++])->input;
     if (consume('(')) {

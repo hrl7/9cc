@@ -24,12 +24,13 @@ char *debug_ptr_type(Type *type) {
 }
 
 char *debug_type(Context *ctx, Node *node) {
-  if (node->ty == ND_NUM) {
-    return "number literal";
-  }
+  printf("# debug_type ty: %d\n", node->ty);
+  if (node->ty == ND_NUM) return "number literal";
+  if (node->ty == ND_STRING) return "string literal";
 
   Record *rec;
   if (node->ty == ND_IDENT || node->ty == ND_VAR_DECL) {
+    printf("# debug_type ident ty: %d, name: %s\n", node->ty, node->name);
     rec = get_record(ctx, node->name);
     if (rec == NULL || rec->type == NULL) {
       fprintf(stderr, "# unexpected record for %s\n", node->name);
@@ -76,6 +77,19 @@ char *debug_type(Context *ctx, Node *node) {
       printf("# args length %d\n", node->args->len);
     }
     return "args";
+  }
+
+  if (node->ty == ND_CHAR) {
+    return "char";
+  }
+  if (node->ty == ND_REF) {
+    return "addr";
+  }
+  if (node->ty == ND_FN_CALL) {
+    return "fn_call";
+  }
+  if (node->ty == ND_EQ) {
+    return "eq";
   }
   printf("%s %d: unexpected node type :%d %c\n",__FILE__, __LINE__, node->ty, node->ty);
   fprintf(stderr, "%s %d:, nexpected node type :%d %c\n", __FILE__, __LINE__, node->ty, node->ty);
@@ -202,15 +216,22 @@ void traverse_node(Context *ctx, Node *node) {
       printf("# fn decl %s\n", node->name);
       return traverse_fn_decl(node->ctx, node);
     case ND_FN_CALL:
+      if (node->args != NULL) {
+        traverse_nodes(ctx, node->args);
+      }
       return;
     case ND_VAR_DECL:
-    printf("# ctx->parent: %x, ctx->name %s, var name %s\n", ctx->parent, ctx->name, node->name);
+      printf("# ctx->parent: %x, ctx->name %s, var name %s\n", ctx->parent, ctx->name, node->name);
       if (ctx->parent == NULL) {
         traverse_global_var(ctx, node);
       } else {
 
-    printf("# ctx->parent: %x, ctx->name %s, var name %s\n", ctx->parent->parent, ctx->parent->name, node->name);
+      printf("# ctx->parent: %x, ctx->name %s, var name %s\n", ctx->parent->parent, ctx->parent->name, node->name);
       }
+      return;
+    case ND_STRING:
+      printf("# string literal %s\n",node->str);
+      vec_push(strings, node->str);
       return;
     case ND_RET:
       traverse_node(ctx, node->body);
@@ -219,10 +240,11 @@ void traverse_node(Context *ctx, Node *node) {
       traverse_node(ctx, node->lhs);
       return;
     case ND_IDENT:
-      printf("# identifier %s, type: %s\n", node->name, debug_type(ctx, node));
+      //printf("# identifier %s, type: %s\n", node->name, debug_type(ctx, node));
       return;
     case '=':
       printf("# assignment left hand type: %s\n", debug_type(ctx,node->lhs));
+      printf("# assignment right hand type: %s\n", debug_type(ctx,node->rhs));
       traverse_node(ctx, node->lhs);
       traverse_node(ctx, node->rhs);
       return;

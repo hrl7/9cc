@@ -1,7 +1,7 @@
 #include "9cc.h"
 
 int pos, branch_id = 0;
-Vector *tokens, *scopes;
+Vector *tokens, *scopes, *strings;
 Node *code[100];
 Map *variables;
 Context *global_ctx;
@@ -19,6 +19,7 @@ int main(int argc, char **argv) {
   global_ctx = new_context("global");
   global_ctx->parent = NULL;
   scopes = new_vector();
+  strings = new_vector();
   printf("# src => %s\n", argv[1]);
   variables = new_map();
   tokens = new_vector();
@@ -32,12 +33,6 @@ int main(int argc, char **argv) {
   post_process(global_ctx, code);
 
   printf(".intel_syntax noprefix\n");
-#ifdef __APPLE__
-  printf(".global _main\n");
-#else
-  printf(".global main\n");
-#endif
-
   Node *node, **fns, **vars;
   Record *rec;
   int num_fn_decls = 1, num_global_vars = 1;
@@ -65,15 +60,33 @@ int main(int argc, char **argv) {
   fns[fi] = NULL;
   vars[vi] = NULL;
 
-  for (int i = 0; fns[i]; i++) {
-    gen_fn_decl(fns[i]);
+
+  if (strings->len != 0) {
+    printf(".section .data\n");
+    char *str;
+    for (int i = 0; i < strings->len; i++) {
+      str = strings->data[i];
+      printf(".LC%d:\n", i);
+      printf("  .ascii \"%s\"\n", str);
+    }
   }
 
   if (vi != 0) {
-    printf(".data\n");
+    printf(".section .data\n");
     for (int i = 0; vars[i]; i++) {
       gen_global_var_decl(vars[i]);
     }
   }
+  printf(".section .text\n");
+#ifdef __APPLE__
+  printf(".global _main\n");
+#else
+  printf(".global main\n");
+#endif
+
+  for (int i = 0; fns[i]; i++) {
+    gen_fn_decl(fns[i]);
+  }
+
   return 0;
 }

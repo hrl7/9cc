@@ -8,6 +8,24 @@ void tokenize(char *p) {
     }
 
     Token *token = malloc(sizeof(Token));
+    if (*p == '\"') {
+      int i = 0;
+      char *s = p + 1;
+      do {
+        i++;
+        p++;
+      } while (*p != '\"' && *p != NULL);
+      char *str = malloc(sizeof(char) * (i));
+      memcpy(str, s, i - 1);
+      str[i - 1] = NULL;
+      token->input = str;
+      token->ty = TK_STRING;
+      printf("# found tk string %s\n", token->input);
+      p++;
+      vec_push(tokens, token);
+      continue;
+    }
+
     if (*p == '\'' && p[2] == '\'') {
       token->ty = TK_CHAR;
       token->input = NULL;
