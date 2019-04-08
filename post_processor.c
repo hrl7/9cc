@@ -211,11 +211,13 @@ void traverse_global_var(Context *ctx, Node *node){
 }
 
 void traverse_node(Context *ctx, Node *node) {
+  printf("# node->ty %d\n", node->ty);
   switch(node->ty) {
     case ND_FN_DECL:
       printf("# fn decl %s\n", node->name);
       return traverse_fn_decl(node->ctx, node);
     case ND_FN_CALL:
+      printf("# pp fn-call %s\n", node->name);
       if (node->args != NULL) {
         traverse_nodes(ctx, node->args);
       }
@@ -235,6 +237,23 @@ void traverse_node(Context *ctx, Node *node) {
       return;
     case ND_RET:
       traverse_node(ctx, node->body);
+      return;
+    case ND_IF:
+      traverse_node(ctx, node->cond);
+      traverse_nodes(ctx, node->body);
+      if (node->els != NULL) {
+        traverse_nodes(ctx, node->els);
+      }
+      return;
+    case ND_WHILE:
+      traverse_node(ctx, node->cond);
+      traverse_nodes(ctx, node->body);
+      return;
+    case ND_FOR:
+      traverse_node(ctx, node->init);
+      traverse_node(ctx, node->cond);
+      traverse_node(ctx, node->updater);
+      traverse_nodes(ctx, node->body);
       return;
     case ND_DEREF:
       traverse_node(ctx, node->lhs);
@@ -274,9 +293,6 @@ void traverse_node(Context *ctx, Node *node) {
       return;
 
     case ND_REF:
-    case ND_IF:
-    case ND_WHILE:
-    case ND_FOR:
     case ND_EQ:
     case ND_NEQ:
     case ND_LT:

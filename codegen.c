@@ -77,7 +77,13 @@ void gen_lval(Node *node) {
 }
 
 int get_str_id(char *str) {
-  return 0;
+  printf("#search str %s\n", str);
+  for(int i = 0;i < strings->len; i++) {
+    if (strcmp(strings->data[i], str) == 0) {
+      return i;
+    }
+  }
+  return -1;
 }
 
 size_t get_data_width_by_type(Type *type) {

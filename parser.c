@@ -2,6 +2,11 @@
 
 extern void error(int line, char *str, char *arg);
 extern void error_with_msg(int line, char *msg);
+extern Node *mul();
+extern Node *cmp();
+extern Node *add();
+extern Node *assign();
+extern Node *ret();
 
 Node *new_node(int ty, Node *lhs, Node *rhs) {
   Node *node = malloc(sizeof(Node));
@@ -250,7 +255,6 @@ init: var_decl '=' term
 stmt: e
 stmt: if_stmt stmt
 stmt: while_stmt stmt
-stmt: 'return' assign ';' stmt
 stmt: var_decl ';'
 stmt: assign ';' stmt
 stmt: init ';' stmt
@@ -270,6 +274,7 @@ formal_args: 'int' ident
 formal_args: 'int' ident ',' formal_args
 
 assign: cmp
+assign: 'return' assign
 assign: add "=" assign
 
 cmp: add
@@ -343,7 +348,7 @@ Vector *actual_args() {
   Vector *arguments = new_vector();
   do {
     printf("# arg %d\n", current_token()->ty);
-    vec_push(arguments, add());
+    vec_push(arguments, cmp());
   } while(consume(','));
   if (consume(')')) {
     return arguments;
@@ -427,7 +432,10 @@ Node *cmp() {
 }
 
 Node *assign() {
-  Node *node = cmp();
+  Node *node = ret();
+  if (node != NULL) return node;
+
+  node = cmp();
   if (consume('=')) {
     node = new_node('=', node, assign());
   }
@@ -513,7 +521,6 @@ Node *for_stmt() {
 Node *ret() {
   if (consume_keyword("return")) {
     Node *node = assign();
-    consume_and_assert(__LINE__, ';');
     return new_node_ret(node);
   }
   return NULL;
@@ -580,6 +587,7 @@ Vector *stmt(Context *ctx) {
 
     node = ret();
     if (node != NULL) {
+      consume_and_assert(__LINE__, ';');
       vec_push(stmts, node);
       continue;
     }

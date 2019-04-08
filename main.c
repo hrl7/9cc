@@ -92,6 +92,7 @@ int main(int argc, char **argv) {
       str = strings->data[i];
       printf(".LC%d:\n", i);
       printf("  .ascii \"%s\"\n", str);
+      printf("  .byte 0\n");
     }
   }
 

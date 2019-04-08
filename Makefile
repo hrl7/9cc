@@ -19,11 +19,20 @@ malloc.o:
 	$(CC) -o malloc.o -c ./tests/malloc.c
 
 test: 9cc
+	make sh-test
+	make c-test
+
+sh-test: 9cc
 	./9cc -test
 	./test.sh
 
 c-test: 9cc
 	./9cc tests/test.c > tmp.s
+	$(CC) -no-pie -o tmp tmp.s call-printf.o malloc.o
+	@echo "-----run-----"
+	./tmp
+c-test-tmp: 9cc
+	./9cc tests/tmp.c > tmp.s
 	$(CC) -no-pie -o tmp tmp.s call-printf.o malloc.o
 	@echo "-----run-----"
 	./tmp
