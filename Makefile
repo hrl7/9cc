@@ -17,5 +17,11 @@ test: 9cc
 	./9cc -test
 	./test.sh
 
+c-test: 9cc
+	./9cc tests/test.c > tmp.s
+	$(CC) -no-pie -o tmp tmp.s call-printf.o malloc.o
+	@echo "-----run-----"
+	./tmp
+
 clean:
 	rm -f 9cc *.o tmp* core

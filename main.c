@@ -1,4 +1,6 @@
 #include "9cc.h"
+#include <sys/stat.h>
+#include <errno.h>
 
 int pos, branch_id = 0;
 Vector *tokens, *scopes, *strings;
@@ -16,15 +18,37 @@ int main(int argc, char **argv) {
     return 0;
   }
 
+  int length = strlen(argv[1]);
+  char *fname = argv[1];
+  char *ext = fname + length -2;
+  char *src;
+
+  if (strcmp(ext, ".c") == 0) {
+    struct stat *st = malloc(sizeof(struct stat));
+    FILE *fp = fopen(fname, "r");
+    if (fp == NULL) {
+      fprintf(stderr, "failed to open file: %s\n", fname);
+      exit(1);
+    }
+    if (stat(fname, st) != 0) {
+      fprintf(stderr, "failed to get stat: %s, error: %s\n", fname, strerror(errno));
+      exit(1);
+    }
+    src = malloc(sizeof(char) * st->st_size);
+    fread(src, 1, st->st_size, fp);
+  } else {
+    src = argv[1];
+  }
+
   global_ctx = new_context("global");
   global_ctx->parent = NULL;
   scopes = new_vector();
   strings = new_vector();
-  printf("# src => %s\n", argv[1]);
+  //printf("# src => %s\n", src);
   variables = new_map();
   tokens = new_vector();
 
-  tokenize(argv[1]);
+  tokenize(src);
   printf("# finish tokenize\n");
 
   parse(global_ctx);
