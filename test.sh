@@ -5,7 +5,7 @@ try() {
   input="$2"
 
   ./9cc "$input" > tmp.s
-  gcc -no-pie -o tmp tmp.s call-printf.o malloc.o
+  gcc -no-pie -o tmp tmp.s util.o
   ./tmp
   actual="$?"
 
@@ -32,10 +32,6 @@ try 0 "int main() { char *msg = \"piyopiyo\"; return 0;}"
 try 0 "int main() { char *msg = \"abcd\"; return msg[4];}"
 try 0 "int main() { printf(\"hello world\"); return 0;}"
 
-show_title initialization
-try 9 "int main() { int a = 9; return a;}";
-try 9 "int main() { int a = 3 + 6; return a;}";
-try 13 "int x = 13; int main() { return x;}";
 
 show_title char
 try 3 "int main() { char a; return 3;}";
@@ -78,16 +74,6 @@ try 7 "int main(){int *a = allocate(4); *a = 7; return *a;}"
 # try 4 "int main(){int *a; *a = 4; return *a;}"
 try 7 "int main(){int *x; x = allocate(4); int *y; y = allocate(4); *x = 7; y = x; return *y;}"
 try 11 "int main(){int *a; a = allocate(4); *a = 4; int *b; b = allocate(7); *b = 7; return *a + *b;}"
-
-show_title arithemetic
-try 7 "int main(){ int hogehoge; hogehoge = 7; return hogehoge;}"
-try 21 "int main(){ return 5+20-4;}"
-try 21 "int main(){ return 5 + 20 - 4;}"
-try 41 "int main(){ return 12 + 34 - 5 ;}"
-try 47 "int main(){ return 5+6*7;}"
-try 15 "int main(){ return 5*(9-6);}"
-try 4 "int main(){ return (3+5)/2;}"
-try 55 "int main(){ return 1+2+3+4+5+6+7+8+9+10;}"
 
 show_title assignment
 try 4 "int main(){int hoge; hoge = 4; return hoge;}"
