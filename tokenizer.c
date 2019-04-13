@@ -1,19 +1,51 @@
 #include "9cc.h"
 
+int line = 1;
+int col = 1;
+
+void set_start_pos(Token *tok) {
+  tok->line_start = line;
+  tok->col_start = col;
+}
+
+void set_end_pos(Token *tok) {
+  tok->line_end = line;
+  tok->col_end = col;
+}
+
 void tokenize(char *p) {
+  char *c_start = p;
+  int oneline_comment = 0;
+  int multiline_comment = 0;
   while (*p) {
-    if (isspace(*p)) {
+    if (isspace(*p) || oneline_comment) {
+      if (*p == '\n') {
+        line++;
+        col = 0;
+        oneline_comment = 0;
+      } else {
+        col++;
+      }
       p++;
+      c_start = p;
+      continue;
+    }
+
+    if (*p == '/' && *(p+1) == '/') {
+      oneline_comment = 1;
+      p += 2;
       continue;
     }
 
     Token *token = malloc(sizeof(Token));
+    set_start_pos(token);
     if (*p == '\"') {
       int i = 0;
       char *s = p + 1;
       do {
         i++;
         p++;
+        col++;
       } while (*p != '\"' && *p != NULL);
       char *str = malloc(sizeof(char) * (i));
       memcpy(str, s, i - 1);
@@ -22,6 +54,8 @@ void tokenize(char *p) {
       token->ty = TK_STRING;
       printf("# found tk string %s\n", token->input);
       p++;
+      col++;
+      set_end_pos(token);
       vec_push(tokens, token);
       continue;
     }
@@ -30,22 +64,27 @@ void tokenize(char *p) {
       token->ty = TK_CHAR;
       token->input = NULL;
       token->val = p[1];
+      set_end_pos(token);
       vec_push(tokens, token);
       p += 3;
+      col += 3;
       continue;
     }
 
     if (*p == '=' && *(p+1) == '=') {
       token->ty = TK_EQ;
       token->input = NULL;
+      set_end_pos(token);
       vec_push(tokens, token);
       p += 2;
+      col += 2;
       continue;
     }
 
     if (*p == '!' && *(p+1) == '=') {
       token->ty = TK_NEQ;
       token->input = NULL;
+      set_end_pos(token);
       vec_push(tokens, token);
       p += 2;
       continue;
@@ -54,6 +93,7 @@ void tokenize(char *p) {
     if (*p == '>' && *(p+1) == '=') {
       token->ty = TK_LE;
       token->input = NULL;
+      set_end_pos(token);
       vec_push(tokens, token);
       p += 2;
       continue;
@@ -62,8 +102,10 @@ void tokenize(char *p) {
     if (*p == '<' && *(p+1) == '=') {
       token->ty = TK_GE;
       token->input = NULL;
+      set_end_pos(token);
       vec_push(tokens, token);
       p += 2;
+      col += 2;
       continue;
     }
 
@@ -74,8 +116,10 @@ void tokenize(char *p) {
         *p == '[' || *p == ']') {
       token->ty = *p;
       token->input = p;
+      set_end_pos(token);
       vec_push(tokens, token);
       p++;
+      col++;
       continue;
     }
 
@@ -85,6 +129,7 @@ void tokenize(char *p) {
              ('0' <= *p && *p <= '9') ||
              *p == '_') {
         p++;
+        col++;
       }
       int width = p - sp + 1; // last 1 for \0
       char *name = malloc(sizeof(char) * width);
@@ -92,6 +137,7 @@ void tokenize(char *p) {
       name[width - 1] = '\0';
       token->ty = TK_IDENT;
       token->input = name;
+      set_end_pos(token);
       vec_push(tokens, token);
       continue;
     }
@@ -100,6 +146,7 @@ void tokenize(char *p) {
       token->ty = TK_NUM;
       token->input = p;
       token->val = strtol(p, &p, 10);
+      set_end_pos(token);
       vec_push(tokens, token);
       continue;
     }

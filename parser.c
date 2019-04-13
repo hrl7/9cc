@@ -215,7 +215,6 @@ int consume_keyword(const char *keyword) {
   return 1;
 }
 
-
 void error(int line, char *str, char *arg) {
   fprintf(stderr, str, arg);
   printf(str, arg);
@@ -233,7 +232,6 @@ void error_with_msg(int line, char *str) {
   printf("\n %s %d: pos: %d, token-type: %c %d\n",__FILE__, line, pos, token->ty, token->ty);
   exit(1);
 }
-
 
 /*
 program: e

@@ -19,6 +19,10 @@ typedef struct Token {
   int ty;
   int val;
   char *input;
+  int line_start;
+  int col_start;
+  int line_end;
+  int col_end;
 } Token;
 
 enum {
