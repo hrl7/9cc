@@ -1,8 +1,8 @@
-int expect(int expected, int actual) {
+int expect(int line, int expected, int actual) {
   if (expected == actual) {
     return 0;
   }
-  printf("%d expected, but got %d\n", expected, actual);
+  printf("%s %d: %d expected, but got %d\n",__FILE__, line, expected, actual);
   exit_with_error();
 }
 
@@ -96,135 +96,135 @@ int fact(int n){if(n>0){return n*fact(n-1);}else{return 1;}}
 int main() {
   char *msg1 = "abcd";
   printf("binary operators\n");
-  expect(1, 7 <= 8);
-  expect(1, 7 <= 7);
-  expect(0, 7 <= 6);
-  expect(1, 8 >= 7);
-  expect(1, 7 >= 7);
-  expect(0, 6 >= 7);
-  expect(1, 7 < 8);
-  expect(0, 7 < 7);
-  expect(0, 7 < 6);
-  expect(1, 8 > 7);
-  expect(0, 7 > 7);
-  expect(0, 6 > 7);
-  expect(1, 10 == 10);
-  expect(0, 10 == 9);
-  expect(0, 10 != 10);
-  expect(1, 10 != 9);
+  expect(__LINE__, 1, 7 <= 8);
+  expect(__LINE__, 1, 7 <= 7);
+  expect(__LINE__, 0, 7 <= 6);
+  expect(__LINE__, 1, 8 >= 7);
+  expect(__LINE__, 1, 7 >= 7);
+  expect(__LINE__, 0, 6 >= 7);
+  expect(__LINE__, 1, 7 < 8);
+  expect(__LINE__, 0, 7 < 7);
+  expect(__LINE__, 0, 7 < 6);
+  expect(__LINE__, 1, 8 > 7);
+  expect(__LINE__, 0, 7 > 7);
+  expect(__LINE__, 0, 6 > 7);
+  expect(__LINE__, 1, 10 == 10);
+  expect(__LINE__, 0, 10 == 9);
+  expect(__LINE__, 0, 10 != 10);
+  expect(__LINE__, 1, 10 != 9);
   printf("OK\n");
 
   printf("arithmetic\n");
-  expect(21, 5 + 20 - 4);
-  expect(41, 12 + 34 -5);
-  expect(47, 5 + 6 * 7);
-  expect(15, 5 * (9 - 6));
-  expect(4, (3+5)/2);
-  expect(55, 1+2+3+4+5+6+7+8+9+10);
+  expect(__LINE__, 21, 5 + 20 - 4);
+  expect(__LINE__, 41, 12 + 34 -5);
+  expect(__LINE__, 47, 5 + 6 * 7);
+  expect(__LINE__, 15, 5 * (9 - 6));
+  expect(__LINE__, 4, (3+5)/2);
+  expect(__LINE__, 55, 1+2+3+4+5+6+7+8+9+10);
   printf("OK\n");
 
   printf("char\n");
-  expect(3, char1());
-  expect(3, char2());
-  //expect(3, char3());
-  //expect(120, char4());
-  //expect(3, char5());
-  //expect(97, char6());
+  expect(__LINE__, 3, char1());
+  expect(__LINE__, 3, char2());
+  //expect(__LINE__, 3, char3());
+  //expect(__LINE__, 120, char4());
+  //expect(__LINE__, 3, char5());
+  //expect(__LINE__, 97, char6());
   printf("OK\n");
 
   printf("initialization\n");
-  expect(9, init1());
-  expect(9, init2());
-  expect(13, init3());
+  expect(__LINE__, 9, init1());
+  expect(__LINE__, 9, init2());
+  expect(__LINE__, 13, init3());
   printf("OK\n");
 
   printf("string literal\n");
-  //expect(97, string1());
-  //expect(0, string2());
-  //expect(0, string3());
-  expect(0, string4());
+  //expect(__LINE__, 97, string1());
+  //expect(__LINE__, 0, string2());
+  //expect(__LINE__, 0, string3());
+  expect(__LINE__, 0, string4());
   printf("OK\n");
 
   printf("global variables\n");
-  expect(7, global_var1());
-  expect(8, global_var2());
-  expect(7, global_var3());
+  expect(__LINE__, 7, global_var1());
+  expect(__LINE__, 8, global_var2());
+  expect(__LINE__, 7, global_var3());
   printf("OK\n");
 
   printf("array\n");
-  expect(7, array1());
-  expect(2, array2());
-  expect(3, array3());
-  expect(5, array4());
-  expect(5, array5());
-  expect(2, array6());
-  //expect(3, array7());
-  expect(2, array8());
-  //expect(3, array9());
+  expect(__LINE__, 7, array1());
+  expect(__LINE__, 2, array2());
+  expect(__LINE__, 3, array3());
+  expect(__LINE__, 5, array4());
+  expect(__LINE__, 5, array5());
+  expect(__LINE__, 2, array6());
+  //expect(__LINE__, 3, array7());
+  expect(__LINE__, 2, array8());
+  //expect(__LINE__, 3, array9());
   printf("OK\n");
 
   printf("pointer operator\n");
-  expect(7, ptr_op1());
-  expect(2, ptr_op2());
-  expect(3, ptr_op3());
-  expect(4, ptr_op4());
-  expect(4, ptr_op5());
-  expect(4, ptr_op6());
-  expect(4, ptr_op7());
+  expect(__LINE__, 7, ptr_op1());
+  expect(__LINE__, 2, ptr_op2());
+  expect(__LINE__, 3, ptr_op3());
+  expect(__LINE__, 4, ptr_op4());
+  expect(__LINE__, 4, ptr_op5());
+  expect(__LINE__, 4, ptr_op6());
+  expect(__LINE__, 4, ptr_op7());
   printf("OK\n");
 
   printf("pointer\n");
-  expect(7, ptr1());
-  expect(7, ptr2());
-  expect(7, ptr3());
-  expect(7, ptr4());
-  expect(11, ptr5());
+  expect(__LINE__, 7, ptr1());
+  expect(__LINE__, 7, ptr2());
+  expect(__LINE__, 7, ptr3());
+  expect(__LINE__, 7, ptr4());
+  expect(__LINE__, 11, ptr5());
   printf("OK\n");
 
   printf("assignment\n");
-  expect(4, assign1());
-  expect(8, assign2());
-  expect(9, assign3());
-  expect(3, assign4());
-  expect(3, assign5());
-  expect(2, assign6());
+  expect(__LINE__, 4, assign1());
+  expect(__LINE__, 8, assign2());
+  expect(__LINE__, 9, assign3());
+  expect(__LINE__, 3, assign4());
+  expect(__LINE__, 3, assign5());
+  expect(__LINE__, 2, assign6());
   printf("OK\n");
 
 
   printf("function call\n");
-  expect(0, fn_call1());
-  expect(7, fn_call2());
-  expect(10, fn_call3());
-  expect(6, fn_call4());
-  expect(10, fn_call5());
-  //expect(0, fn_call6());
+  expect(__LINE__, 0, fn_call1());
+  expect(__LINE__, 7, fn_call2());
+  expect(__LINE__, 10, fn_call3());
+  expect(__LINE__, 6, fn_call4());
+  expect(__LINE__, 10, fn_call5());
+  //expect(__LINE__, 0, fn_call6());
   printf("OK\n");
 
   printf("if-else statement\n");
-  expect(1, if_else1());
-  expect(0, if_else2());
-  expect(0, if_else3());
-  expect(2, if_else4());
-  expect(1, if_else5());
-  expect(0, if_else6());
-  expect(2, if_else7());
-  expect(0, if_else8());
-  expect(2, if_else9());
-  expect(0, if_else10());
+  expect(__LINE__, 1, if_else1());
+  expect(__LINE__, 0, if_else2());
+  expect(__LINE__, 0, if_else3());
+  expect(__LINE__, 2, if_else4());
+  expect(__LINE__, 1, if_else5());
+  expect(__LINE__, 0, if_else6());
+  expect(__LINE__, 2, if_else7());
+  expect(__LINE__, 0, if_else8());
+  expect(__LINE__, 2, if_else9());
+  expect(__LINE__, 0, if_else10());
   printf("OK\n");
 
   printf("while loop\n");
-  expect(10, while_loop1());
-  expect(66, while_loop2());
+  expect(__LINE__, 10, while_loop1());
+  expect(__LINE__, 66, while_loop2());
   printf("OK\n");
   printf("for loop\n");
-  expect(55, for_loop1());
-  expect(55, for_loop2());
+  expect(__LINE__, 55, for_loop1());
+  expect(__LINE__, 55, for_loop2());
   printf("OK\n");
 
   printf("recursion\n");
-  expect(6, fact(3));
-  expect(120, fact(5));
+  expect(__LINE__, 6, fact(3));
+  expect(__LINE__, 120, fact(5));
   printf("OK\n");
   return 0;
 }

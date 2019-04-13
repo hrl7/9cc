@@ -19,6 +19,8 @@ typedef struct Token {
   int ty;
   int val;
   char *input;
+
+  // meta
   int line_start;
   int col_start;
   int line_end;
@@ -47,6 +49,12 @@ enum {
   ND_CHAR = 274,
   ND_STRING = 275,
 };
+
+typedef struct Meta {
+  char *file_name;
+  char *date;
+  char *time;
+} Meta;
 
 typedef struct Node {
   int ty;

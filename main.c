@@ -1,12 +1,23 @@
 #include "9cc.h"
 #include <sys/stat.h>
 #include <errno.h>
+#include <time.h>
 
 int pos, branch_id = 0;
 Vector *tokens, *scopes, *strings;
 Node *code[100];
 Map *variables;
 Context *global_ctx;
+
+void setup_meta(Meta *meta) {
+  meta->date = malloc(sizeof(char) * 12);
+  meta->time = malloc(sizeof(char) * 9);
+  time_t t = time(NULL);
+  strftime(meta->date,12, "%b %d %Y", localtime(&t));
+  strftime(meta->time, 9, "%H:%M:%S", localtime(&t));
+  printf("# %s\n", meta->date);
+  printf("# %s\n", meta->time);
+}
 
 int main(int argc, char **argv) {
   if (argc != 2) {
@@ -23,6 +34,9 @@ int main(int argc, char **argv) {
   char *ext = fname + length -2;
   char *src;
 
+  Meta *meta;
+  meta = malloc(sizeof(Meta));
+
   if (strcmp(ext, ".c") == 0) {
     struct stat *st = malloc(sizeof(struct stat));
     FILE *fp = fopen(fname, "r");
@@ -34,6 +48,7 @@ int main(int argc, char **argv) {
       fprintf(stderr, "failed to get stat: %s, error: %s\n", fname, strerror(errno));
       exit(1);
     }
+    meta->file_name = fname;
     src = malloc(sizeof(char) * st->st_size);
     fread(src, 1, st->st_size, fp);
   } else {
@@ -50,6 +65,9 @@ int main(int argc, char **argv) {
 
   tokenize(src);
   printf("# finish tokenize\n");
+
+  setup_meta(meta);
+  pre_process(meta, global_ctx, tokens);
 
   parse(global_ctx);
   printf("# finish parsing\n");
