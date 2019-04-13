@@ -46,7 +46,7 @@ void gen_lval(Node *node) {
     if (is_global_var(rec)) {
       printf("  lea rax, %s[rip]\n", name);
     } else {
-      printf("  mov rax, rbp # \n", rec->offset);
+      printf("  mov rax, rbp \n");
       printf("  sub rax, %d# address of var %s\n", rec->offset, name);
     }
     printf("  push rax\n");
@@ -58,7 +58,7 @@ void gen_lval(Node *node) {
     if (node_ty == ND_IDENT) {
       char *name = node->lhs->name;
       Record *rec = lookup_var(name);
-      printf("  mov rax, rbp # \n", rec->offset);
+      printf("  mov rax, rbp\n");
       printf("  sub rax, %d# address of var %s\n", rec->offset, name);
       while (node != NULL && node->ty == ND_DEREF) {
         printf("  mov rax, [rax]\n");
@@ -107,7 +107,7 @@ size_t get_data_width_by_record(Record *rec) {
 size_t get_data_width(Node *node) {
   if (node->ty == ND_IDENT) {
     Record *rec = lookup_var(node->name);
-    return get_data_width_by_record(rec);
+    return get_data_width_by_type(rec->type);
   }
 
   if (node->ty == ND_REF) {
@@ -439,7 +439,13 @@ void gen(Node *node) {
     printf("  pop rax\n");
     if (node->lhs->ty == ND_IDENT) {
       Record *rec = lookup_var(node->lhs->name);
-      int width = get_data_width_by_record(rec);
+      int width;
+      if (rec->type->ty == PTR || rec->type->ty == ARRAY) {
+        width = get_data_width_by_type(rec->type->ptr_of);
+      } else {
+        width = get_data_width_by_record(rec);
+      }
+      printf("# lhs width: %d\n", width);
       switch(width) {
         case 1:
           printf("  movb [rax], dil\n");
