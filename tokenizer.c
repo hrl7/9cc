@@ -123,9 +123,12 @@ void tokenize(char *p) {
       continue;
     }
 
-    if ('a' <= *p && *p <= 'z') {
+    if (('a' <= *p && *p <= 'z') ||
+        ('A' <= *p && *p <= 'Z') ||
+        *p == '_') {
       char *sp = p;
       while (('a' <= *p && *p <= 'z') ||
+             ('A' <= *p && *p <= 'Z') ||
              ('0' <= *p && *p <= '9') ||
              *p == '_') {
         p++;
