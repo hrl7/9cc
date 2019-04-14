@@ -257,6 +257,7 @@ void traverse_node(Context *ctx, Node *node) {
       return;
     case ND_DEREF:
       traverse_node(ctx, node->lhs);
+      printf("# found ND_DEREF type: %s\n", debug_type(ctx, node->lhs));
       return;
     case ND_IDENT:
       //printf("# identifier %s, type: %s\n", node->name, debug_type(ctx, node));

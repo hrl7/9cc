@@ -46,7 +46,7 @@ void gen_lval(Node *node) {
     if (is_global_var(rec)) {
       printf("  lea rax, %s[rip]\n", name);
     } else {
-      printf("  mov rax, rbp # \n", rec->offset);
+      printf("  mov rax, rbp \n");
       printf("  sub rax, %d# address of var %s\n", rec->offset, name);
     }
     printf("  push rax\n");
@@ -58,7 +58,7 @@ void gen_lval(Node *node) {
     if (node_ty == ND_IDENT) {
       char *name = node->lhs->name;
       Record *rec = lookup_var(name);
-      printf("  mov rax, rbp # \n", rec->offset);
+      printf("  mov rax, rbp\n");
       printf("  sub rax, %d# address of var %s\n", rec->offset, name);
       while (node != NULL && node->ty == ND_DEREF) {
         printf("  mov rax, [rax]\n");
@@ -107,7 +107,7 @@ size_t get_data_width_by_record(Record *rec) {
 size_t get_data_width(Node *node) {
   if (node->ty == ND_IDENT) {
     Record *rec = lookup_var(node->name);
-    return get_data_width_by_record(rec);
+    return get_data_width_by_type(rec->type);
   }
 
   if (node->ty == ND_REF) {
@@ -318,6 +318,51 @@ void gen_global_var_decl(Node *node) {
   }
 }
 
+Node *find_ptr_node(Node *node) {
+  printf("# ptr_node %d\n", node->ty);
+  Record *rec;
+  switch(node->ty) {
+    case ND_IDENT:
+      return node;
+    case '+':
+    case '-': {
+      if (node->lhs->ty == ND_IDENT) {
+        rec = lookup_var(node->lhs->name);
+        if (rec->type->ty == PTR || rec->type->ty == ARRAY) {
+          return node->lhs;
+        }
+      }
+      if (node->rhs->ty == ND_IDENT) {
+        rec = lookup_var(node->rhs->name);
+        if (rec->type->ty == PTR || rec->type->ty == ARRAY) {
+          return node->rhs;
+        }
+      }
+    }
+  }
+  return NULL;
+}
+
+int get_derefed_size(Node *node) {
+  printf("# get derefed size %d %c\n", node->ty, node->ty);
+  Node *ptr_node = find_ptr_node(node);
+  if (ptr_node == NULL) {
+    printf("# cannot find ptr_node\n");
+    return -1;
+  }
+  Record *rec = lookup_var(ptr_node->name);
+  switch(rec->type->ptr_of->ty) {
+    case INT:
+      return 4;
+    case CHAR:
+      return 1;
+    case PTR:
+    case ARRAY:
+      return 8;
+  }
+  return -1;
+}
+
 void gen(Node *node) {
   if (node->ty == ND_VAR_DECL) {
     Record *rec = lookup_var(node->name);
@@ -395,7 +440,19 @@ void gen(Node *node) {
 
   if (node->ty == ND_DEREF) {
     gen(node->lhs);
+    int width = get_derefed_size(node->lhs);
     printf("  mov rax, [rax]\n");
+    printf("# data width: %d byte\n", width);
+    switch(width) {
+      case 1:
+        printf("  mov rcx, 0xff\n");
+        printf("  and rax, rcx\n");
+        break;
+      case 4:
+        printf("  mov rcx, 0xffff\n");
+        printf("  and rax, rcx\n");
+        break;
+    }
     printf("  add rsp, 8\n");
     printf("  push rax\n");
     printf("# node deref ^\n" );
@@ -440,6 +497,7 @@ void gen(Node *node) {
     if (node->lhs->ty == ND_IDENT) {
       Record *rec = lookup_var(node->lhs->name);
       int width = get_data_width_by_record(rec);
+      printf("# lhs width: %d\n", width);
       switch(width) {
         case 1:
           printf("  movb [rax], dil\n");

@@ -70,9 +70,9 @@ int fn_call4_sub(int a,int  b) {return a - b; }
 int fn_call4() {return fn_call4_sub(8, 2);}
 int fn_call5_sub(int a, int b) {return  a - b; }
 int fn_call5(){int x = fn_call5_sub(8, 2);return x + 4;}
-//int fn_call6_sub(int a, int b) {return  a - b; }
-//int fn_call6_add(int a,int b) {return  a + b; }
-//int fn_call6() {int x;   x = fn_call6_add(8, 2);   return fn_call6_sub(x, 10);   }
+int fn_call6_sub(int a, int b) {return  a - b; }
+int fn_call6_add(int a,int b) {return  a + b; }
+int fn_call6() {int x;   x = fn_call6_add(8, 2);   return fn_call6_sub(x, 10);   }
 
 int if_else1() {int b=1;if (1 == 0) b = 0 ; return b; }
 int if_else2() {int b=1;if (0 == 0) b = 0 ; return b; }
@@ -139,9 +139,9 @@ int main() {
   printf("OK\n");
 
   printf("string literal\n");
-  //expect(__LINE__, 97, string1());
-  //expect(__LINE__, 0, string2());
-  //expect(__LINE__, 0, string3());
+  expect(__LINE__, 97, string1());
+  expect(__LINE__, 0, string2());
+  expect(__LINE__, 0, string3());
   expect(__LINE__, 0, string4());
   printf("OK\n");
 
@@ -197,7 +197,7 @@ int main() {
   expect(__LINE__, 10, fn_call3());
   expect(__LINE__, 6, fn_call4());
   expect(__LINE__, 10, fn_call5());
-  //expect(__LINE__, 0, fn_call6());
+  expect(__LINE__, 0, fn_call6());
   printf("OK\n");
 
   printf("if-else statement\n");
