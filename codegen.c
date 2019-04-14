@@ -162,7 +162,6 @@ void gen_fn_decl(Node *node) {
   if (args != NULL) {
     Node *arg_node;
     for (int i = 0; i < num_args; i++) {
-      printf("# args %d\n", i);
       arg_node = args->data[i];
       var_name = arg_node->name;
       rec = map_get(local_vars, var_name);
@@ -179,8 +178,9 @@ void gen_fn_decl(Node *node) {
     }
   }
   for (int i = 0; i < local_vars->keys->len; i++) {
-    rec = lookup_var(rec->name);
+    rec = local_vars->vals->data[i];
     if(rec->type->ty == ARRAY) {
+      printf("# i: %d, found array %s, type %d, size: %d\n", i, rec->name, rec->type->ty, rec->type->array_size);
       offset = rec->offset + 8 + (int)get_data_width_by_record(rec) * (rec->type->array_size - 1);
       printf("  mov rax, rbp\n");
       printf("  sub rax, %d # last elem of %s\n", offset, rec->name);
@@ -396,9 +396,11 @@ void gen(Node *node) {
     if (rec->offset == -1) {
       switch(width) {
         case 1:
+          printf("  xor rax, rax\n");
           printf("  mov ax, %s[rip] # var %s\n", node->name);
           break;
         case 4:
+          printf("  xor rax, rax\n");
           printf("  mov eax, %s[rip] # var %s\n", node->name);
           break;
         case 8:
@@ -408,9 +410,11 @@ void gen(Node *node) {
     } else {
       switch(width) {
         case 1:
+          printf("  xor rax, rax\n");
           printf("  mov ax, [rbp-%d] # var %s\n", rec->offset, node->name);
           break;
         case 4:
+          printf("  xor rax, rax\n");
           printf("  mov eax, [rbp-%d] # var %s\n", rec->offset, node->name);
           break;
         case 8:

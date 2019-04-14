@@ -52,7 +52,6 @@ void tokenize(char *p) {
       str[i - 1] = NULL;
       token->input = str;
       token->ty = TK_STRING;
-      printf("# found tk string %s\n", token->input);
       p++;
       col++;
       set_end_pos(token);
@@ -154,7 +153,7 @@ void tokenize(char *p) {
       continue;
     }
 
-    fprintf(stderr, "cannot tokenize: '%c', code: %d\n", p[0], p[0]);
+    fprintf(stderr, "cannot tokenize: '%c', code: %d, at line: %d, col: %d\n", p[0], p[0], line, col);
     exit(1);
   }
 

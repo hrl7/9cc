@@ -24,13 +24,11 @@ char *debug_ptr_type(Type *type) {
 }
 
 char *debug_type(Context *ctx, Node *node) {
-  printf("# debug_type ty: %d\n", node->ty);
   if (node->ty == ND_NUM) return "number literal";
   if (node->ty == ND_STRING) return "string literal";
 
   Record *rec;
   if (node->ty == ND_IDENT || node->ty == ND_VAR_DECL) {
-    printf("# debug_type ident ty: %d, name: %s\n", node->ty, node->name);
     rec = get_record(ctx, node->name);
     if (rec == NULL || rec->type == NULL) {
       fprintf(stderr, "# unexpected record for %s\n", node->name);
@@ -211,7 +209,6 @@ void traverse_global_var(Context *ctx, Node *node){
 }
 
 void traverse_node(Context *ctx, Node *node) {
-  printf("# node->ty %d\n", node->ty);
   switch(node->ty) {
     case ND_FN_DECL:
       printf("# fn decl %s\n", node->name);
@@ -223,12 +220,11 @@ void traverse_node(Context *ctx, Node *node) {
       }
       return;
     case ND_VAR_DECL:
-      printf("# ctx->parent: %x, ctx->name %s, var name %s\n", ctx->parent, ctx->name, node->name);
       if (ctx->parent == NULL) {
         traverse_global_var(ctx, node);
       } else {
 
-      printf("# ctx->parent: %x, ctx->name %s, var name %s\n", ctx->parent->parent, ctx->parent->name, node->name);
+        printf("# ctx->parent: %x, ctx->name %s, var name %s\n", ctx->parent->parent, ctx->parent->name, node->name);
       }
       return;
     case ND_STRING:
@@ -256,15 +252,13 @@ void traverse_node(Context *ctx, Node *node) {
       traverse_nodes(ctx, node->body);
       return;
     case ND_DEREF:
-      traverse_node(ctx, node->lhs);
       printf("# found ND_DEREF type: %s\n", debug_type(ctx, node->lhs));
+      traverse_node(ctx, node->lhs);
       return;
     case ND_IDENT:
       //printf("# identifier %s, type: %s\n", node->name, debug_type(ctx, node));
       return;
     case '=':
-      printf("# assignment left hand type: %s\n", debug_type(ctx,node->lhs));
-      printf("# assignment right hand type: %s\n", debug_type(ctx,node->rhs));
       traverse_node(ctx, node->lhs);
       traverse_node(ctx, node->rhs);
       return;
@@ -274,17 +268,13 @@ void traverse_node(Context *ctx, Node *node) {
         debug_type(ctx, node->lhs),
         debug_type(ctx, node->rhs));
       int lhs_width = get_addr_width(ctx, node->lhs);
-      printf("# node->lhs width %d\n", lhs_width);
       int rhs_width = get_addr_width(ctx, node->rhs);
-      printf("# node->rhs width %d\n", rhs_width);
       if (lhs_width != 0 && rhs_width == 0) {
-        printf("# multiply rhs\n");
         node->rhs = new_node('*', new_node_num(lhs_width), node->rhs);
         traverse_node(ctx, node->lhs);
         return;
       }
       if (rhs_width != 0 && lhs_width == 0) {
-        printf("# multiply lhs\n");
         node->lhs = new_node('*', new_node_num(rhs_width), node->lhs);
         traverse_node(ctx, node->rhs);
         return;

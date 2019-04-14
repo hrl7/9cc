@@ -11,11 +11,11 @@ int init2() { int a = 3 + 6; return a;}
 int init3_x = 13;
 int init3() { return init3_x;}
 
-int char1() { char a; return 3;}
-int char2() { char a; a = 3; return 3;}
-int char3() { char a; a = 3; return a;}
-int char4() { char a; a = 'x'; return a; }
-int char5() {char x[3];x[0] = -1;x[1] = 2;int y;y = 4;x[0] + y;}
+int char1() {char a; return 3;}
+int char2() {char a; a = 3; return 3;}
+int char3() {char a; a = 3; return a;}
+int char4() {char a; a = 'x'; return a; }
+int char5() {char x[3];x[0] = 5;x[1] = 2;int y;y = 4;x[0] + y;}
 int char6() {char d; char c; int a; d = 'a'; c = 123; a = 20; return d;}
 
 int string1() { char *msg = "abcd"; return msg[0];}
@@ -128,7 +128,7 @@ int main() {
   expect(__LINE__, 3, char2());
   //expect(__LINE__, 3, char3());
   //expect(__LINE__, 120, char4());
-  //expect(__LINE__, 3, char5());
+  expect(__LINE__, 9, char5());
   //expect(__LINE__, 97, char6());
   printf("OK\n");
 
