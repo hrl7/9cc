@@ -180,7 +180,7 @@ void gen_fn_decl(Node *node) {
   for (int i = 0; i < local_vars->keys->len; i++) {
     rec = local_vars->vals->data[i];
     if(rec->type->ty == ARRAY) {
-      printf("# i: %d, found array %s, type %d, size: %d\n", i, rec->name, rec->type->ty, rec->type->array_size);
+      printf("# i: %d, found array %s, type %d, size: %d\n", i, rec->name, rec->type->ty, (int)rec->type->array_size);
       offset = rec->offset + 8 + (int)get_data_width_by_record(rec) * rec->type->array_size;
       printf("  mov rax, rbp\n");
       printf("  sub rax, %d # last elem of %s\n", offset, rec->name);
@@ -367,7 +367,7 @@ void gen(Node *node) {
   if (node->ty == ND_VAR_DECL) {
     Record *rec = lookup_var(node->name);
     if (rec->offset == -1) {
-      gen_global_var_decl(rec);
+      gen_global_var_decl(node);
     }
     return;
   }
@@ -438,7 +438,7 @@ void gen(Node *node) {
       printf("  push rax\n");
       return;
     }
-    printf("%s %d: expected IDENT, but got %s\n", __FILE__, __LINE__, node->lhs->ty);
+    printf("%s %d: expected IDENT, but got %c %d\n", __FILE__, __LINE__, node->lhs->ty, node->lhs->ty);
     exit(1);
   }
 
@@ -484,7 +484,7 @@ void gen(Node *node) {
   }
 
   if (node->ty == ND_RET) {
-    gen(node->body);
+    gen(node->body->data[0]);
     printf("  pop rax\n");
     printf("  mov rsp, rbp\n");
     printf("  pop rbp # fn epilogue\n");
