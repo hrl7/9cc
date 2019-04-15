@@ -1,5 +1,7 @@
 #include "9cc.h"
 
+extern void tokenize(char *p);
+
 int line = 1;
 int col = 1;
 
@@ -46,10 +48,10 @@ void tokenize(char *p) {
         i++;
         p++;
         col++;
-      } while (*p != '\"' && *p != NULL);
+      } while (*p != '\"' && *p != 0);
       char *str = malloc(sizeof(char) * (i));
       memcpy(str, s, i - 1);
-      str[i - 1] = NULL;
+      str[i - 1] = 0;
       token->input = str;
       token->ty = TK_STRING;
       p++;

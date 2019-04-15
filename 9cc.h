@@ -104,6 +104,13 @@ typedef struct Record {
   int is_arg;
 } Record;
 
+void tokenize(char *p);
+void pre_process(Meta *meta, Context *global_ctx, Vector *tokens);
+void parse(Context *global_ctx);
+void post_process(Context *global_ctx, Node **code);
+void gen_fn_decl(Node *node);
+void gen_global_var_decl(Node *node);
+
 Node *add();
 Node *mul();
 Node *term();
