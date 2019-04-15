@@ -20,8 +20,13 @@ void tokenize(char *p) {
   int oneline_comment = 0;
   int multiline_comment = 0;
   while (*p) {
-    if (isspace(*p) || oneline_comment) {
-      if (*p == '\n') {
+
+    if (isspace(*p) || multiline_comment || oneline_comment) {
+      if (multiline_comment && (*p == '*' && *(p + 1) == '/')) {
+        multiline_comment = 0;
+        p++;
+        col +=2;
+      } else if (*p == '\n') {
         line++;
         col = 0;
         oneline_comment = 0;
@@ -33,10 +38,17 @@ void tokenize(char *p) {
       continue;
     }
 
-    if (*p == '/' && *(p+1) == '/') {
-      oneline_comment = 1;
-      p += 2;
-      continue;
+    if (*p == '/') {
+      if (*(p+1) == '/') {
+        oneline_comment = 1;
+        p += 2;
+        continue;
+      }
+      if (*(p+1) == '*') {
+        multiline_comment = 1;
+        p += 2;
+        continue;
+      }
     }
 
     Token *token = malloc(sizeof(Token));
