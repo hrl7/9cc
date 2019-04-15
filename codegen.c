@@ -181,7 +181,7 @@ void gen_fn_decl(Node *node) {
     rec = local_vars->vals->data[i];
     if(rec->type->ty == ARRAY) {
       printf("# i: %d, found array %s, type %d, size: %d\n", i, rec->name, rec->type->ty, rec->type->array_size);
-      offset = rec->offset + 8 + (int)get_data_width_by_record(rec) * (rec->type->array_size - 1);
+      offset = rec->offset + 8 + (int)get_data_width_by_record(rec) * rec->type->array_size;
       printf("  mov rax, rbp\n");
       printf("  sub rax, %d # last elem of %s\n", offset, rec->name);
       printf("  mov [rbp-%d], rax\n", rec->offset);

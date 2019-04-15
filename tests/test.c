@@ -158,9 +158,9 @@ int main() {
   expect(__LINE__, 5, array4());
   expect(__LINE__, 5, array5());
   expect(__LINE__, 2, array6());
-  //expect(__LINE__, 3, array7());
+  expect(__LINE__, 3, array7());
   expect(__LINE__, 2, array8());
-  //expect(__LINE__, 3, array9());
+  expect(__LINE__, 3, array9());
   printf("OK\n");
 
   printf("pointer operator\n");

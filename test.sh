@@ -32,8 +32,4 @@ try 120 "int main() { char a; a = 'x'; return a; }"
 try 3 "int main() {char x[3];x[0] = -1;x[1] = 2;int y;y = 4;x[0] + y;}"
 try 97 "int main() {char d; char c; int a; d = 'a'; c = 123; a = 20; return d;}"
 
-show_title array
-try 3 "int main() { int a[2]; *a = 1; *(a + 1) = 2; int *p; p = a; return *p + *(p + 1); }"
-try 3 "int main() { int a[2]; a[0] = 1; a[1] = 2; int *p; p = a; return p[0] + p[1]; }"
-
 echo OK
