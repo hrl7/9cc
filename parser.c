@@ -2,6 +2,8 @@
 
 extern void error(int line, char *str, char *arg);
 extern void error_with_msg(int line, char *msg);
+extern int consume(int ty);
+extern int consume_keyword(const char *keyword);
 extern Node *mul();
 extern Node *cmp();
 extern Node *add();
@@ -114,7 +116,7 @@ Node *new_node_for_stmt(Node *init, Node *cond, Node *updater, Vector *body) {
 Node *new_node_ret(Node *body) {
   Node *node = malloc(sizeof(Node));
   node->ty = ND_RET;
-  node->body = body;
+  node->lhs = body;
   return node;
 }
 
@@ -225,8 +227,8 @@ void error(int line, char *str, char *arg) {
 }
 
 void error_with_msg(int line, char *str) {
-  fprintf(stderr, str);
-  printf(str);
+  fprintf(stderr, "%s", str);
+  printf("%s", str);
   Token *token = tokens->data[pos];
   fprintf(stderr, "\n %s %d:, pos: %d, token-type: %c %d\n", __FILE__, line, pos, token->ty, token->ty);
   printf("\n %s %d: pos: %d, token-type: %c %d\n",__FILE__, line, pos, token->ty, token->ty);
@@ -352,6 +354,7 @@ Vector *actual_args() {
     return arguments;
   }
   error(__LINE__, "no corresponding close paren %s", ((Token *)tokens->data[pos])->input);
+  return NULL;
 }
 
 Node *term() {
@@ -416,6 +419,7 @@ Node *term() {
   }
 
   error(__LINE__, "invalid token: %s", token->input);
+  return NULL;
 }
 
 Node *cmp() {
@@ -650,7 +654,7 @@ Node *fn_decl(Context *ctx) {
   if (!consume_keyword("int")) return NULL;
   Node *fn_name = ident();
   if (fn_name != NULL && current_token()->ty == '(') {
-    Node *args = formal_args();
+    Vector *args = formal_args();
     if (consume('{')) { Context *local_ctx = new_context(fn_name->name);
       local_ctx->parent = ctx;
       Vector *body = stmt(local_ctx);

@@ -21,6 +21,7 @@ char *debug_ptr_type(Type *type) {
     strcat(str, type_name);
     return str;
   }
+  return NULL;
 }
 
 char *debug_type(Context *ctx, Node *node) {
@@ -32,7 +33,7 @@ char *debug_type(Context *ctx, Node *node) {
     rec = get_record(ctx, node->name);
     if (rec == NULL || rec->type == NULL) {
       fprintf(stderr, "# unexpected record for %s\n", node->name);
-      printf("# unexpected record for %s\n", rec->type);
+      printf("# unexpected record for %d\n", rec->type->ty);
       exit(1);
     }
     switch(rec->type->ty) {
@@ -181,7 +182,7 @@ void traverse_fn_decl(Context *ctx, Node *node) {
       offset += (int)get_data_width_by_record(rec);
       rec->offset = offset;
       if (rec->type->ty == ARRAY) {
-        printf("# array_of  size: %d, array_size %d\n",  get_data_width_by_type(rec->type->ptr_of), rec->type->array_size);
+        printf("# array_of  size: %d, array_size %d\n",  (int)get_data_width_by_type(rec->type->ptr_of), (int)rec->type->array_size);
         offset += rec->type->array_size * get_data_width_by_type(rec->type->ptr_of);
       }
     };
@@ -222,9 +223,6 @@ void traverse_node(Context *ctx, Node *node) {
     case ND_VAR_DECL:
       if (ctx->parent == NULL) {
         traverse_global_var(ctx, node);
-      } else {
-
-        printf("# ctx->parent: %x, ctx->name %s, var name %s\n", ctx->parent->parent, ctx->parent->name, node->name);
       }
       return;
     case ND_STRING:
@@ -232,7 +230,7 @@ void traverse_node(Context *ctx, Node *node) {
       vec_push(strings, node->str);
       return;
     case ND_RET:
-      traverse_node(ctx, node->body);
+      traverse_node(ctx, node->lhs);
       return;
     case ND_IF:
       traverse_node(ctx, node->cond);
@@ -302,10 +300,10 @@ void traverse_nodes(Context *ctx, Vector *nodes) {
 }
 
 void post_process(Context *ctx, Node **codes) {
-  printf("# start post process\n");
+  printf("%s", "# start post process\n");
   for(int i = 0; codes[i]; i++) {
     printf("# code [%d]\n", i);
     traverse_node(ctx, codes[i]);
   }
-  printf("# finish post process\n");
+  printf("%s", "# finish post process\n");
 }

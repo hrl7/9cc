@@ -112,16 +112,16 @@ void test_map() {
   printf("test_map\n");
   Map *map = new_map();
 
-  expect(__LINE__, NULL, (int)map_get(map, "foo"));
+  expect(__LINE__, 0, (long)map_get(map, "foo"));
 
   map_put(map, "foo", (void *)2);
-  expect(__LINE__, 2, (int)map_get(map, "foo"));
+  expect(__LINE__, 2, (long)map_get(map, "foo"));
 
   map_put(map, "bar", (void *)4);
-  expect(__LINE__, 4, (int)map_get(map, "bar"));
+  expect(__LINE__, 4, (long)map_get(map, "bar"));
 
   map_put(map, "foo", (void *)6);
-  expect(__LINE__, 6, (int)map_get(map, "foo"));
+  expect(__LINE__, 6, (long)map_get(map, "foo"));
   free_map(map);
   printf("OK\n");
 }
@@ -132,13 +132,13 @@ void test_vector() {
   expect(__LINE__, 0, vec->len);
 
   for (int i = 0; i < 100; i++) {
-    vec_push(vec, (void *)i);
+    vec_push(vec, (void *)(long)i);
   }
 
   expect(__LINE__, 100, vec->len);
-  expect(__LINE__, 0, (int)vec->data[0]);
-  expect(__LINE__, 50, (int)vec->data[50]);
-  expect(__LINE__, 99, (int)vec->data[99]);
+  expect(__LINE__, 0, (long)vec->data[0]);
+  expect(__LINE__, 50, (long)vec->data[50]);
+  expect(__LINE__, 99, (long)vec->data[99]);
   printf("OK \n");
 }
 
@@ -157,7 +157,7 @@ void test_context() {
   expect_str(__LINE__, "test", trec->name);
   expect(__LINE__, 4, trec->offset);
   expect(__LINE__, 0, trec->type->ty);
-  expect(__LINE__, 0, trec->type->ptr_of);
+  expect(__LINE__, 0, (long)trec->type->ptr_of);
   printf("OK\n");
 }
 

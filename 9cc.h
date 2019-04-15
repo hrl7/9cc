@@ -65,7 +65,7 @@ typedef struct Node {
   char *name; // IDENT, FN_CALL function name
   char *str;
   struct Vector *args; // Vector of Node for FN_CALL, FN_DECL
-  struct Vecotr *body; // Vector of Node for FN_DECL, ND_IF, ND_WHILE, ND_FOR
+  struct Vector *body; // Vector of Node for FN_DECL, ND_IF, ND_WHILE, ND_FOR
   struct Node *cond; // Condition for ND_IF, ND_WHILE, ND_FOR
   struct Node *init; // ND_FOR, ND_VAR_DECL
   struct Node *updater; // ND_FOR
@@ -103,6 +103,13 @@ typedef struct Record {
   Type *type;
   int is_arg;
 } Record;
+
+void tokenize(char *p);
+void pre_process(Meta *meta, Context *global_ctx, Vector *tokens);
+void parse(Context *global_ctx);
+void post_process(Context *global_ctx, Node **code);
+void gen_fn_decl(Node *node);
+void gen_global_var_decl(Node *node);
 
 Node *add();
 Node *mul();
