@@ -57,6 +57,20 @@ void vec_push(Vector *vec, void *elm) {
   vec->data[vec->len++] = elm;
 }
 
+void vec_insert(Vector *vec, const Vector *elems, int at) {
+  Vector *tmp = new_vector();
+  for(int i = at; i < vec->len; i++) {
+    vec_push(tmp, vec->data[i]);
+    if (i - at < elems->len) {
+      vec->data[i] = elems->data[i - at];
+    }
+  };
+  int offset = at + elems->len;
+  for(int i = 0; i < tmp->len; i++) {
+    vec->data[i + offset] = tmp->data[i];
+  }
+}
+
 Record *new_record(char *name, int offset, Type *type, int is_arg) {
   Record *rec = malloc(sizeof(Record));
   rec->name = malloc(sizeof(char) * (strlen(name) + 1));
@@ -142,6 +156,32 @@ void test_vector() {
   printf("OK \n");
 }
 
+void test_vector_insert() {
+  printf("test_vector_insert\n");
+  Vector *vec = new_vector();
+  Vector *vec2 = new_vector();
+  expect(__LINE__, 0, vec->len);
+
+  vec_push(vec, (void *)(long)1);
+  vec_push(vec, (void *)(long)2);
+  vec_push(vec, (void *)(long)3);
+  vec_push(vec2, (void *)(long)7);
+  vec_push(vec2, (void *)(long)8);
+
+  expect(__LINE__, 1, (long)vec->data[0]);
+  expect(__LINE__, 2, (long)vec->data[1]);
+  expect(__LINE__, 3, (long)vec->data[2]);
+
+  vec_insert(vec, vec2, 1);
+  expect(__LINE__, 1, (long)vec->data[0]);
+  expect(__LINE__, 7, (long)vec->data[1]);
+  expect(__LINE__, 8, (long)vec->data[2]);
+  expect(__LINE__, 2, (long)vec->data[3]);
+  expect(__LINE__, 3, (long)vec->data[4]);
+  printf("OK \n");
+}
+
+
 void test_context() {
   printf("test_context\n");
   Context *ctx = new_context("test");
@@ -163,6 +203,7 @@ void test_context() {
 
 void runtest() {
   test_vector();
+  test_vector_insert();
   test_map();
   test_context();
 }
