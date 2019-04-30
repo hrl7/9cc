@@ -133,6 +133,8 @@ size_t get_data_width_by_type(Type *type);
 
 Vector *new_vector();
 void vec_push(Vector *vec, void *elm);
+void vec_delete(Vector *vec, int at);
+void vec_insert(Vector *vec, Vector *elems, int at);
 
 Map *new_map();
 void map_put(Map *map, char *key, void *val);
