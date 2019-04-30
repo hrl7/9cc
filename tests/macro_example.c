@@ -1,8 +1,13 @@
+#define X 3+4
+#define Y 123
+#define ZY 123
+
 int main() {
-  printf("line %d\n", __LINE__);
-  printf("file %s\n", __FILE__);
-  printf("date %s\n", __DATE__);
-  printf("time %s\n", __TIME__);
+  printf("X: %d\n", X);
+  printf("Y: %d\n", Y);
+//#ifdef X
+printf("x is defined\n");
+//#endif
   return 0;
 }
 

@@ -57,7 +57,15 @@ void vec_push(Vector *vec, void *elm) {
   vec->data[vec->len++] = elm;
 }
 
-void vec_insert(Vector *vec, const Vector *elems, int at) {
+void vec_delete(Vector *vec, int at) {
+  for(int i = at; i < vec->len - 1; i++) {
+    vec->data[i] = vec->data[i+1];
+  };
+  vec->len--;
+  vec->data[vec->len ] = NULL;
+}
+
+void vec_insert(Vector *vec, Vector *elems, int at) {
   Vector *tmp = new_vector();
   for(int i = at; i < vec->len; i++) {
     vec_push(tmp, vec->data[i]);
@@ -181,6 +189,31 @@ void test_vector_insert() {
   printf("OK \n");
 }
 
+void test_vector_delete() {
+  printf("test_vector_delete\n");
+  Vector *vec = new_vector();
+  expect(__LINE__, 0, vec->len);
+
+  vec_push(vec, (void *)(long)1);
+  vec_push(vec, (void *)(long)2);
+  vec_push(vec, (void *)(long)3);
+  vec_push(vec, (void *)(long)4);
+
+  expect(__LINE__, 4, vec->len);
+
+  expect(__LINE__, 1, (long)vec->data[0]);
+  expect(__LINE__, 2, (long)vec->data[1]);
+  expect(__LINE__, 3, (long)vec->data[2]);
+  expect(__LINE__, 4, (long)vec->data[3]);
+
+  vec_delete(vec, 1);
+  expect(__LINE__, 3, vec->len);
+
+  expect(__LINE__, 1, (long)vec->data[0]);
+  expect(__LINE__, 3, (long)vec->data[1]);
+  expect(__LINE__, 4, (long)vec->data[2]);
+  printf("OK \n");
+}
 
 void test_context() {
   printf("test_context\n");
@@ -204,6 +237,7 @@ void test_context() {
 void runtest() {
   test_vector();
   test_vector_insert();
+  test_vector_delete();
   test_map();
   test_context();
 }

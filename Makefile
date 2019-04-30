@@ -33,6 +33,11 @@ c-test-tmp: 9cc
 	$(CC) -no-pie -o tmp tmp.s util.o
 	@echo "-----run-----"
 	./tmp
+test-macro: 9cc
+	./9cc tests/macro_example.c > tmp.s
+	$(CC) -no-pie -o tmp tmp.s util.o
+	@echo "-----run-----"
+	./tmp
 
 clean:
 	rm -f 9cc *.o tmp* core
