@@ -5,7 +5,7 @@ OBJS=$(SRCS:.c=.o)
 build:
 	docker build . -t 9cc
 run:
-	docker run -it --rm -v `pwd`:/root/app 9cc sh
+	docker run -it --rm --cap-add=SYS_PTRACE --security-opt="seccomp=unconfined" -v `pwd`:/root/app 9cc sh
 
 9cc: $(OBJS)
 	$(CC) -g -O0 -o 9cc $(OBJS) $(LDFLAGS)
