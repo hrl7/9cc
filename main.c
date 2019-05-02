@@ -20,17 +20,19 @@ void setup_meta(Meta *meta) {
 }
 
 int main(int argc, char **argv) {
-  if (argc != 2) {
-    fprintf(stderr, "invalid number of arguments\n");
+  if (argc == 0 || argc > 3) {
+    fprintf(stderr, "invalid number of arguments: %d\n", argc);
     return 1;
   }
   if (strcmp(argv[1], "-test") == 0) {
     runtest();
     return 0;
   }
+  int only_proprocess = strcmp(argv[1], "-E") == 0;
 
-  int length = strlen(argv[1]);
-  char *fname = argv[1];
+  int arg_i = only_proprocess ? 2 : 1;
+  int length = strlen(argv[arg_i]);
+  char *fname = argv[arg_i];
   char *ext = fname + length -2;
   char *src;
 
@@ -68,6 +70,10 @@ int main(int argc, char **argv) {
 
   setup_meta(meta);
   pre_process(meta, global_ctx, tokens);
+  if (only_proprocess) {
+    export_tokens();
+    return;
+  }
 
   parse(global_ctx);
   printf("# finish parsing\n");
