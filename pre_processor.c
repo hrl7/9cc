@@ -77,6 +77,15 @@ void process_define_macro(PreProcessor *p, Token *token) {
       vec_delete(p->tokens, start_pos);
     }
     p->pos = start_pos;
+    return;
+  }
+
+  if (strcmp(token->input, "ifdef") == 0) {
+    Token *name = pp_consume_token(p);
+    p->pos++;
+    printf("# found ifdef %s\n", name->input);
+
+    return;
   }
   return;
 }

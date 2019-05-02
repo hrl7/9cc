@@ -105,6 +105,7 @@ typedef struct Record {
 } Record;
 
 void tokenize(char *p);
+void export_tokens();
 void pre_process(Meta *meta, Context *global_ctx, Vector *tokens);
 void parse(Context *global_ctx);
 void post_process(Context *global_ctx, Node **code);

@@ -15,6 +15,13 @@ void set_end_pos(Token *tok) {
   tok->col_end = col;
 }
 
+char *substr(char *p, int length) {
+  char *str = malloc(sizeof(char) * (length + 1));
+  strncpy(str, p, length);
+  str[length] = NULL;
+  return str;
+}
+
 void tokenize(char *p) {
   char *c_start = p;
   int oneline_comment = 0;
@@ -61,10 +68,7 @@ void tokenize(char *p) {
         p++;
         col++;
       } while (*p != '\"' && *p != 0);
-      char *str = malloc(sizeof(char) * (i));
-      memcpy(str, s, i - 1);
-      str[i - 1] = 0;
-      token->input = str;
+      token->input = substr(s, i - 1);
       token->ty = TK_STRING;
       p++;
       col++;
@@ -128,7 +132,7 @@ void tokenize(char *p) {
         *p == '<' || *p == '>' || *p == '&' ||
         *p == '[' || *p == ']' || *p == '#') {
       token->ty = *p;
-      token->input = p;
+      token->input = substr(p, 1);
       set_end_pos(token);
       vec_push(tokens, token);
       p++;
@@ -147,12 +151,9 @@ void tokenize(char *p) {
         p++;
         col++;
       }
-      int width = p - sp + 1; // last 1 for \0
-      char *name = malloc(sizeof(char) * width);
-      strncpy(name, sp, width);
-      name[width - 1] = '\0';
+      int width = p - sp;
       token->ty = TK_IDENT;
-      token->input = name;
+      token->input = substr(sp, width);
       set_end_pos(token);
       vec_push(tokens, token);
       continue;
@@ -160,8 +161,9 @@ void tokenize(char *p) {
 
     if (isdigit(*p)) {
       token->ty = TK_NUM;
-      token->input = p;
+      char *sp = p;
       token->val = strtol(p, &p, 10);
+      token->input = substr(sp, p - sp);
       set_end_pos(token);
       vec_push(tokens, token);
       continue;
@@ -175,5 +177,42 @@ void tokenize(char *p) {
   token->ty = TK_EOF;
   token->input = p;
   vec_push(tokens, token);
+}
+
+void export_tokens() {
+  printf("# export tokens\n----------\n");
+  int i = 0;
+  int current_line = 0;
+  int current_col = 0;
+  Token *token = tokens->data[i];
+  while(token != NULL) {
+    //printf("@@@ curreet_line: %d, token->line_start: %d\n", current_line, token->line_start);
+    while (current_line < token->line_start) {
+      printf("\n");
+      current_line++;
+      current_col = 0;
+    };
+    //printf("@@@ current_col: %d, token->col_start: %d | ", current_col, token->col_start);
+    while (current_col < token->col_start ) {
+      printf(" ");
+      current_col++;
+    }
+
+    switch (token->ty) {
+      case TK_STRING:
+        printf("\"%s\"", token->input);
+        break;
+      case TK_CHAR:
+        printf("\'%c\'", token->val);
+        break;
+      case TK_EQ:
+        puts("==");
+        break;
+      default:
+        printf("%s", token->input);
+    }
+    current_col = token->col_end;
+    token = tokens->data[++i];
+  }
 }
 
