@@ -180,7 +180,7 @@ void tokenize(char *p) {
 }
 
 void export_tokens() {
-  printf("# export tokens\n----------\n");
+  printf("# export tokens\n#----------\n");
   int i = 0;
   int current_line = 0;
   int current_col = 0;

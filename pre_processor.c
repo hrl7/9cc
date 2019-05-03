@@ -61,6 +61,45 @@ Vector *collect_tokens_until_newline(PreProcessor *p) {
   return tks;
 }
 
+void remove_tokens(PreProcessor *p, int index, int num) {
+  for (int j = 0; j < num; j++) {
+    vec_delete(p->tokens, index);
+  }
+}
+
+void remove_endif(PreProcessor *p) {
+  int i = p->pos;
+  Token *token = p->tokens->data[i];
+  while(token != NULL) {
+    if (token->ty == '#') {
+      Token * next_token = p->tokens->data[i+1];
+      if (next_token->ty == TK_IDENT && strcmp(next_token->input, "endif") == 0) {
+        remove_tokens(p, i, 2); // #, endif
+        return;
+      }
+    }
+    token = p->tokens->data[++i];
+  }
+}
+
+void remove_until_endif(PreProcessor *p) {
+  int i = p->pos;
+  int start_pos = p->pos - 3;
+  Token *token = p->tokens->data[i];
+  while(token != NULL) {
+    printf("#@@@ check token %s\n", token->input);
+    if (token->ty == '#') {
+      Token * next_token = p->tokens->data[i+1];
+      if (next_token->ty == TK_IDENT && strcmp(next_token->input, "endif") == 0) {
+        remove_tokens(p, start_pos, i - start_pos + 2); // #, endif
+        p->pos = start_pos - 1;
+        return;
+      }
+    }
+    token = p->tokens->data[++i];
+  }
+}
+
 void process_define_macro(PreProcessor *p, Token *token) {
   if (strcmp(token->input, "define") == 0) {
     int start_pos = p->pos - 1;
@@ -73,17 +112,25 @@ void process_define_macro(PreProcessor *p, Token *token) {
       printf("# %d: %s, %x\n", i, p->macros->keys->data[i], p->macros->vals->data[i]);
     }
     Vector *temp_body = map_get(p->macros, name->input);
-    for (int i = 0; i <= 2 + body->len; i++) {
-      vec_delete(p->tokens, start_pos);
-    }
+    remove_tokens(p, start_pos, 3 + body->len);
     p->pos = start_pos;
     return;
   }
 
   if (strcmp(token->input, "ifdef") == 0) {
+    int start_pos = p->pos - 1;
     Token *name = pp_consume_token(p);
     p->pos++;
-    printf("# found ifdef %s\n", name->input);
+    Vector *body = map_get(p->macros, name->input);
+    printf("# found ifdef %s at %x\n", name->input, body);
+    remove_tokens(p, start_pos, 3); // #, ifdef, X => 3tokens
+    if (body != NULL) { // defined
+      printf("#@@@ %s is defined\n", name->input);
+      remove_endif(p);
+    } else { // target is not defined
+      printf("#@@@ %s is NOT defined\n", name->input);
+      remove_until_endif(p);
+    }
 
     return;
   }
