@@ -1,4 +1,6 @@
 #define X 3+4
+int x = 123;
+#include<libc-header-start.h>
 #define Y 123
 #define Z 456
 

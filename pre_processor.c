@@ -1,11 +1,7 @@
 #include "9cc.h"
-
-typedef struct PreProcessor {
-  int pos;
-  struct Vector *tokens;
-  struct Map *macros;
-  struct Meta *meta;
-} PreProcessor;
+#include <sys/stat.h>
+#include <stdlib.h>
+#include <errno.h>
 
 Token *pp_current_token(PreProcessor *p) {
   return p->tokens->data[p->pos];
@@ -15,6 +11,8 @@ Token *pp_consume_token(PreProcessor *p) {
   p->pos++;
   return p->tokens->data[p->pos];
 }
+
+int include_counts = 0;
 
 void replace_predefined_macro(Meta *meta, Token *token) {
   if (strcmp(token->input, "__LINE__") == 0) {
@@ -57,7 +55,7 @@ Vector *collect_tokens_until_newline(PreProcessor *p) {
     vec_push(tks, t);
     t = pp_consume_token(p);
   }
-  printf("# collect tokens %d\n", tks->len);
+  //printf("# collect tokens %d\n", tks->len);
   return tks;
 }
 
@@ -87,7 +85,7 @@ void remove_until_endif(PreProcessor *p) {
   int start_pos = p->pos - 3;
   Token *token = p->tokens->data[i];
   while(token != NULL) {
-    printf("#@@@ check token %s\n", token->input);
+    //printf("#@@@ check token %s\n", token->input);
     if (token->ty == '#') {
       Token * next_token = p->tokens->data[i+1];
       if (next_token->ty == TK_IDENT && strcmp(next_token->input, "endif") == 0) {
@@ -107,9 +105,9 @@ void process_define_macro(PreProcessor *p, Token *token) {
     p->pos++;
     Vector *body = collect_tokens_until_newline(p);
     map_put(p->macros, name->input, body);
-    printf("# macro name %s, body length: %d\n", name->input, body->len);
+    //printf("# macro name %s, body length: %d\n", name->input, body->len);
     for (int i = 0; i < p->macros->keys->len; i++) {
-      printf("# %d: %s, %x\n", i, p->macros->keys->data[i], p->macros->vals->data[i]);
+      //printf("# %d: %s, %x\n", i, p->macros->keys->data[i], p->macros->vals->data[i]);
     }
     Vector *temp_body = map_get(p->macros, name->input);
     remove_tokens(p, start_pos, 3 + body->len);
@@ -117,27 +115,113 @@ void process_define_macro(PreProcessor *p, Token *token) {
     return;
   }
 
-  if (strcmp(token->input, "ifdef") == 0) {
+  if (strcmp(token->input, "ifdef") == 0 || strcmp(token->input, "ifndef") == 0) {
     int start_pos = p->pos - 1;
+    int inverted = token->input[2] == 'n'; // ifNdef pr ifDef
     Token *name = pp_consume_token(p);
     p->pos++;
     Vector *body = map_get(p->macros, name->input);
-    printf("# found ifdef %s at %x\n", name->input, body);
+    //printf("# found ifdef/ifndef %s at %x\n", name->input, body);
+    if (body == NULL) {
+      //printf("#@@@ %s is defined\n", name->input);
+    } else {
+      //printf("#@@@ %s is NOT defined\n", name->input);
+    }
+
     remove_tokens(p, start_pos, 3); // #, ifdef, X => 3tokens
-    if (body != NULL) { // defined
-      printf("#@@@ %s is defined\n", name->input);
+    if (inverted ? body == NULL : body != NULL) { // defined
       remove_endif(p);
     } else { // target is not defined
-      printf("#@@@ %s is NOT defined\n", name->input);
       remove_until_endif(p);
     }
 
     return;
   }
+
+  if (strcmp(token->input, "include") == 0) {
+    int start_pos = p->pos - 1;
+    Token *name = pp_consume_token(p);
+    p->pos++;
+    const char *filename = name->input;
+    printf("# include %s from %s at %d\n", name->input, p->meta->file_name, p->pos);
+    remove_tokens(p, start_pos, 3); // #, include, X => 3tokens
+    include_counts++;
+    char *path, *src;
+    int i = 0;
+    while(search_paths[i] != NULL) {
+      int path_len = strlen(search_paths[i]);
+      path = malloc(sizeof(char) * (path_len + strlen(filename) + 2));
+      path[0] = '\0';
+      strcat(path, search_paths[i]);
+      path[path_len] = '/';
+      path[path_len + 1] = '\0';
+      strcat(path, filename);
+      struct stat *st = malloc(sizeof(struct stat));
+      errno = 0;
+      if (stat(path, st) != 0) {
+        if (errno != 2) {
+          fprintf(stderr, "failed to get stat: %s, error: %s\n", path, strerror(errno));
+          exit(1);
+        }
+      }
+
+      if (st->st_size != 0 ) {
+        printf("# tokenize: %s\n", path);
+        Meta *header_meta = malloc(sizeof(Meta));
+        header_meta->file_name = path;
+        src = malloc(sizeof(char) * st->st_size);
+        FILE *fp = fopen(path, "r");
+        if (fp == NULL) {
+          printf("# errorno: %d, includes: %d\n", errno,include_counts);
+          fprintf(stderr, "# fp: %x, errno: %d, %s\n", fp, errno, strerror(errno));
+          fclose(fp);
+          free(path);
+          free(st);
+          free(fp);
+          printf("# error\n");
+          _exit(1);
+        }
+        fread(src, 1, st->st_size, fp);
+        //printf("# size: %d, src: %s\n", st->st_size, src);
+        fclose(fp);
+        Vector *header_tokens = tokenize(src);
+        // this contains only EOF.
+        if (header_tokens->len == 1) return;
+        Meta *meta = malloc(sizeof(Meta));
+        meta->file_name = path;
+        setup_meta(meta);
+        printf("# preprocess: %s, tokens: %d\n#-----------", path, header_tokens->len);
+        pre_process(meta, global_ctx, header_tokens);
+        //export_tokens(header_tokens);
+        printf("# output for %s\n#-------------", path);
+        //export_tokens(header_tokens);
+        printf("#------------- header token length: %d, src token length: %d\n", header_tokens->len, p->tokens->len);
+        vec_delete(header_tokens, header_tokens->len -1); // remove TK_EOF
+        Token *last_token = header_tokens->data[header_tokens->len - 1];
+        int header_lines = last_token->line_start;
+        Token *tk;
+        for (int j = p->pos; j < p->tokens->len; j++) {
+          tk = p->tokens->data[j];
+          tk->line_start += header_lines;
+          tk->line_end += header_lines;
+        }
+        vec_insert(p->tokens, header_tokens, p->pos);
+        printf("#------------combined src token length: %d\n", p->tokens->len);
+        p->pos = start_pos + header_tokens->len;;
+        return;
+      }
+      free(path);
+      i++;
+    }
+    fprintf(stderr, "cannot find %s in search paths\n", name->input);
+    exit(1);
+  }
+
+  //printf("# UNDEFINED directive %s at col: %d, line: %d, pos: %d\n", token->input, token->col_start, token->line_start, p->pos);
   return;
 }
 
-PreProcessor *new_preprocessor(Meta *meta) {
+PreProcessor *new_preprocessor(Meta *meta, Vector *tokens) {
   PreProcessor *p = malloc(sizeof(PreProcessor));
   p->meta = meta;
   p->tokens = tokens;
@@ -146,10 +230,10 @@ PreProcessor *new_preprocessor(Meta *meta) {
   return p;
 }
 
-void pre_process(Meta *meta, Context *ctx, Vector *tokens) {
+PreProcessor *pre_process(Meta *meta, Context *ctx, Vector *tokens) {
   printf("# start preprocessing\n");
-  PreProcessor *p = new_preprocessor(meta);
-  Token *token;
+  PreProcessor *p = new_preprocessor(meta, tokens);
+  Token *token, *last_token;
   printf("# pp1: replace predefined macro\n");
   for (int i = 0; i < tokens->len; i++) {
     token = tokens->data[i];
@@ -159,9 +243,13 @@ void pre_process(Meta *meta, Context *ctx, Vector *tokens) {
   }
   printf("# pp2: fetch define macro\n");
   for (p->pos = 0; p->pos < tokens->len; p->pos++) {
+     // printf("# check pos %d / %d\n", p->pos,tokens->len);
     token = tokens->data[p->pos];
-    if (token->ty == TK_IDENT) {
-      process_define_macro(p, token);
+    if (p->pos > 0) {
+      last_token = tokens->data[p->pos - 1];
+      if (last_token->ty == '#' && token->ty == TK_IDENT) {
+        process_define_macro(p, token);
+      }
     }
   }
   p->pos = 0;
@@ -177,9 +265,10 @@ void pre_process(Meta *meta, Context *ctx, Vector *tokens) {
     token = pp_current_token(p);
     if (token->ty == '#') {
       token = pp_consume_token(p);
-      printf("# macro %s found\n", token->input);
+      //printf("# macro %s found\n", token->input);
     }
     p->pos++;
   }
   printf("# finish preprocessing\n");
+  return p;
 }

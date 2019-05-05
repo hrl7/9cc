@@ -14,8 +14,14 @@ void free_map(Map *map) {
 }
 
 void map_put(Map *map, char *key, void *val) {
-  vec_push(map->keys, key);
-  vec_push(map->vals, val);
+  int i = map_get_index(map, key);
+  if (i == -1) {
+    vec_push(map->keys, key);
+    vec_push(map->vals, val);
+    return;
+  }
+
+  map->vals->data[i] = val;
 }
 
 int map_get_index(Map *map, char *key) {
@@ -66,17 +72,25 @@ void vec_delete(Vector *vec, int at) {
 }
 
 void vec_insert(Vector *vec, Vector *elems, int at) {
+  int vec_length = vec->len;
+  if (vec->len + elems->len > vec->capacity) {
+    vec->capacity = vec->len + elems->len + 1;
+    vec->data = realloc(vec->data, sizeof(void *) * vec->capacity);
+  }
   Vector *tmp = new_vector();
-  for(int i = at; i < vec->len; i++) {
+  for(int i = at; i < vec_length; i++) {
     vec_push(tmp, vec->data[i]);
-    if (i - at < elems->len) {
-      vec->data[i] = elems->data[i - at];
-    }
   };
+  for(int i = 0; i < elems->len; i++) {
+    vec->data[i + at] = elems->data[i];
+  }
   int offset = at + elems->len;
   for(int i = 0; i < tmp->len; i++) {
     vec->data[i + offset] = tmp->data[i];
+    if (vec->len < i + offset) {
+    }
   }
+  vec->len = vec_length + elems->len;
 }
 
 Record *new_record(char *name, int offset, Type *type, int is_arg) {
@@ -186,6 +200,33 @@ void test_vector_insert() {
   expect(__LINE__, 8, (long)vec->data[2]);
   expect(__LINE__, 2, (long)vec->data[3]);
   expect(__LINE__, 3, (long)vec->data[4]);
+
+  free_vector(vec);
+  free_vector(vec2);
+
+  vec = new_vector();
+  vec2 = new_vector();
+  expect(__LINE__, 0, vec->len);
+  expect(__LINE__, 0, vec2->len);
+
+  vec_push(vec, (void *)(long)100);
+  vec_push(vec, (void *)(long)101);
+  vec_push(vec, (void *)(long)102);
+  expect(__LINE__, 100, (long)vec->data[0]);
+  expect(__LINE__, 101, (long)vec->data[1]);
+  expect(__LINE__, 102, (long)vec->data[2]);
+
+  for( int i = 0; i < 50; i++) {
+    vec_push(vec2, (void *)(long)i);
+  }
+
+  vec_insert(vec, vec2, 1);
+  expect(__LINE__, 100, (long)vec->data[0]);
+  expect(__LINE__, 101, (long)vec->data[51]);
+  expect(__LINE__, 102, (long)vec->data[52]);
+  for( int i = 0; i < 50; i++) {
+    expect(__LINE__, i, vec->data[i + 1]);
+  }
   printf("OK \n");
 }
 

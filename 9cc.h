@@ -9,10 +9,15 @@ enum {
   TK_EOF,
   TK_EQ, // ==
   TK_NEQ, // !=
+  TK_OR, // ||
+  TK_AND, // &&
   TK_GE, // <= greater or equal
   TK_LE, // <= less or equal
+  TK_TERNARY_IF,
+  TK_TERNARY_ELSE,
   TK_CHAR,
   TK_STRING,
+  TK_HEADER_FILE_NAME,
 };
 
 typedef struct Token {
@@ -104,10 +109,18 @@ typedef struct Record {
   int is_arg;
 } Record;
 
-void tokenize(char *p);
-void export_tokens();
-void pre_process(Meta *meta, Context *global_ctx, Vector *tokens);
-void parse(Context *global_ctx);
+typedef struct PreProcessor {
+  int pos;
+  struct Vector *tokens;
+  struct Map *macros;
+  struct Meta *meta;
+} PreProcessor;
+
+void setup_meta(Meta *meta);
+Vector *tokenize(char *p);
+void export_tokens(Vector *tokens);
+PreProcessor *pre_process(Meta *meta, Context *global_ctx, Vector *tokens);
+void parse(Context *global_ctx, Vector *tks);
 void post_process(Context *global_ctx, Node **code);
 void gen_fn_decl(Node *node);
 void gen_global_var_decl(Node *node);
@@ -148,9 +161,10 @@ void free_vector(Vector *vec);
 int expect(int line, int expected, int actual);
 void runtest();
 
-extern Vector *scopes, *strings, *tokens;
+extern Vector *scopes, *strings;
 extern Map *variables;
 extern Context *global_ctx;
 extern int pos;
 extern int branch_id;
 extern Node *code[100];
+extern char *search_paths[];

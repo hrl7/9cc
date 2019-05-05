@@ -9,6 +9,7 @@ extern Node *cmp();
 extern Node *add();
 extern Node *assign();
 extern Node *ret();
+Vector *tokens;
 
 Node *new_node(int ty, Node *lhs, Node *rhs) {
   Node *node = malloc(sizeof(Node));
@@ -691,6 +692,7 @@ void program(Context *ctx) {
   code[i] = NULL;
 }
 
-void parse(Context *ctx) {
+void parse(Context *ctx, Vector *tks) {
+  tokens = tks;
   program(ctx);
 }

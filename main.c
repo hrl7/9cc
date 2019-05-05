@@ -4,10 +4,18 @@
 #include <time.h>
 
 int pos, branch_id = 0;
-Vector *tokens, *scopes, *strings;
+Vector *scopes, *strings;
 Node *code[100];
 Map *variables;
 Context *global_ctx;
+char *search_paths[] = {
+  "/usr/include",
+  "/usr/include/x86_64-linux-gnu",
+  "/usr/include/x86_64-linux-gnu/sys",
+  "/usr/include/x86_64-linux-gnu/bits",
+  "/usr/include/x86_64-linux-gnu/bits/types",
+  NULL
+};
 
 void setup_meta(Meta *meta) {
   meta->date = malloc(sizeof(char) * 12);
@@ -61,21 +69,19 @@ int main(int argc, char **argv) {
   global_ctx->parent = NULL;
   scopes = new_vector();
   strings = new_vector();
-  //printf("# src => %s\n", src);
   variables = new_map();
-  tokens = new_vector();
 
-  tokenize(src);
+  Vector *tokens = tokenize(src);
   printf("# finish tokenize\n");
 
   setup_meta(meta);
   pre_process(meta, global_ctx, tokens);
   if (only_proprocess) {
-    export_tokens();
+    export_tokens(tokens);
     return;
   }
 
-  parse(global_ctx);
+  parse(global_ctx, tokens);
   printf("# finish parsing\n");
 
   post_process(global_ctx, code);
