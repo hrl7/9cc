@@ -35,6 +35,15 @@ void *map_get(Map *map, char *key) {
   return NULL;
 }
 
+void map_delete(Map *map, char *key) {
+  int index = map_get_index(map, key);
+  if (index == -1) {
+    return;
+  }
+  vec_delete(map->vals, index);
+  vec_delete(map->keys, index);
+}
+
 Vector *new_vector() {
   Vector *vec = malloc(sizeof(Vector));
   vec->data = malloc(sizeof(void *) * 16);
@@ -137,6 +146,14 @@ void test_map() {
   map_put(map, "foo", (void *)6);
   expect(__LINE__, 6, (long)map_get(map, "foo"));
   free_map(map);
+
+  map = new_map();
+  map_put(map, "foo1", (void *)1);
+  map_put(map, "foo2", (void *)2);
+  map_put(map, "foo3", (void *)3);
+
+  map_delete(map, "foo2");
+  expect(__LINE__, -1, map_get_index(map, "foo2"));
   printf("OK\n");
 }
 
