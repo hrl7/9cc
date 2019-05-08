@@ -79,6 +79,7 @@ typedef struct Node {
   struct Type *data_type;
 } Node;
 
+
 typedef struct Type {
   enum { INT, PTR, ARRAY, CHAR } ty;
   struct Type *ptr_of;
@@ -90,6 +91,22 @@ typedef struct Context {
   char *name;
   struct Map *vars; // Map<var_name, Record>
 } Context;
+
+enum {
+  PP_NUM = 0,
+  PP_IDENT = 1,
+  PP_IF = 2,
+  PP_MACRO = 3,
+  PP_BOOL = 4,
+};
+
+typedef struct PPNode {
+  struct PPNode *body;
+  struct PPNode *left;
+  struct PPNode *right;
+  int ty;
+  int val;
+} PPNode;
 
 typedef struct Vector {
   void **data;
@@ -109,11 +126,17 @@ typedef struct Record {
   int is_arg;
 } Record;
 
+typedef struct PPContext {
+  int pos;
+  Vector *tokens;
+} PPContext;
+
 typedef struct PreProcessor {
   int pos;
-  struct Vector *tokens;
-  struct Map *macros;
-  struct Meta *meta;
+  Vector *tokens;
+  Map *macros;
+  Meta *meta;
+  PPContext *ctx;
 } PreProcessor;
 
 void setup_meta(Meta *meta);

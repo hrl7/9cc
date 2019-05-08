@@ -42,7 +42,7 @@ Vector *tokenize(char *p) {
   int multiline_comment = 0;
   while (*p) {
 
-    if (isspace(*p) || multiline_comment || oneline_comment) {
+    if (isspace(*p) || *p == 16 || *p == 17 || multiline_comment || oneline_comment) {
       if (multiline_comment && (*p == '*' && *(p + 1) == '/')) {
         multiline_comment = 0;
         p++;

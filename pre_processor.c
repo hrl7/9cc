@@ -65,10 +65,12 @@ void remove_tokens(PreProcessor *p, int index, int num) {
   }
 }
 
+// search next #endif and remove it
 void remove_endif(PreProcessor *p) {
   int i = p->pos;
   Token *token = p->tokens->data[i];
   while(token != NULL) {
+    printf("# check token type: %d %c\n", token->ty, token->ty);
     if (token->ty == '#') {
       Token * next_token = p->tokens->data[i+1];
       if (next_token->ty == TK_IDENT && strcmp(next_token->input, "endif") == 0) {
@@ -97,8 +99,197 @@ void remove_until_endif(PreProcessor *p) {
     token = p->tokens->data[++i];
   }
 }
+/*
+  bool: cmp
+
+  if: 'if' add endif
+
+  add: cmp || add
+  add: cmp && add
+  add: cmp + add
+  add: cmp
+
+  cmp: term > term
+  cmp: term < term
+
+  term: ( add )
+  term: MACRO(arguments)
+  term: MACRO add
+
+  arguments: add , add
+  arguments: add
+*/
+
+PPNode *pp_new_node(int ty, PPNode *left, PPNode *right) {
+  PPNode *node = malloc(sizeof(PPNode));
+  node->ty = ty;
+  node->body = NULL;
+  node->left = left;
+  node->right = right;
+  return node;
+}
+
+PPNode *pp_new_node_num(int val) {
+  PPNode *node = malloc(sizeof(PPNode));
+  node->ty = PP_NUM;
+  node->body = NULL;
+  node->right = NULL;
+  node->left = NULL;
+  node->val = val;
+  return node;
+}
+
+PPNode *pp_new_node_bool(int val) {
+  PPNode *node = malloc(sizeof(PPNode));
+  node->ty = PP_BOOL;
+  node->body = NULL;
+  node->right = NULL;
+  node->left = NULL;
+  node->val = val != 0 ? 1 : 0;
+  return node;
+}
+
+
+Token *ppi_current_token(PreProcessor *p) {
+  PPContext *ctx = p->ctx;
+  if (ctx->tokens->len <= ctx->pos) {
+    printf("# token at pos: %d is NULL\n", ctx->pos);
+    return NULL;
+  }
+  return ctx->tokens->data[ctx->pos];
+}
+
+int ppi_consume_ident(PreProcessor *p, const char *keyword) {
+  PPContext *ctx = p->ctx;
+  Token *t = ppi_current_token(p);
+  if (t != NULL && t->ty == TK_IDENT && strcmp(t->input, keyword) == 0) {
+    ctx->pos++;
+    printf("# consumed if\n");
+    return 0;
+  }
+  return 1;
+}
+int ppi_consume_ty(PreProcessor *p, int token_type) {
+  PPContext *ctx = p->ctx;
+  Token *t = ppi_current_token(p);
+  if (t != NULL && t->ty == token_type) {
+    p->ctx->pos++;
+    return 0;
+  }
+  printf("# not consumed %d %c\n", token_type, token_type);
+  return 1;
+}
+
+extern PPNode *pp_add(PreProcessor *p);
+extern PPNode *pp_cmp(PreProcessor *p);
+
+PPNode *pp_term(PreProcessor *p) {
+  Token *t = ppi_current_token(p);
+  if (t == NULL) {
+    return NULL;
+  }
+  if (t->ty == TK_NUM) {
+    p->ctx->pos++;
+    return pp_new_node_num(t->val);
+  }
+  if(ppi_consume_ty(p, '(')) {
+    PPNode *node = pp_add(p);
+    if (!ppi_consume_ty(p, ')')) {
+      fprintf(stderr, "%s:%d: expected ')', but got %c\n", __FILE__, __LINE__, ppi_current_token(p)->ty);
+      exit(1);
+    }
+    return node;
+  }
+  PPNode *node = pp_add(p);
+  return node;
+}
+
+PPNode *pp_cmp(PreProcessor *p) {
+  PPNode *node = pp_term(p);
+  return node;
+}
+
+PPNode *pp_add(PreProcessor *p) {
+  PPNode *node = pp_cmp(p);
+  if (ppi_consume_ty(p, '+')) {
+    return pp_new_node('+', node, pp_add(p));
+  }
+  return node;
+}
+
+PPNode *pp_if_stmt(PreProcessor *p) {
+  if(ppi_consume_ident(p, "if")) {
+    PPNode *node = pp_new_node(PP_IF, NULL, NULL);
+    node->body = pp_add(p);
+    return node;
+  }
+  return NULL;
+}
+
+PPNode *pp_parse(PreProcessor *p, Vector *tokens) {
+  Token *t;
+  PPContext *ctx = p->ctx;
+  ctx->tokens = tokens;
+  ctx->pos = 1;
+  for (int i = 0; i < tokens->len; i++) {
+    t = tokens->data[i];
+    printf("# %d: %d, %c\n", i, t->ty, t->ty);
+  }
+
+  PPNode *node = pp_if_stmt(p);
+  return node;
+}
+
+PPNode *pp_node_to_bool(PreProcessor *p, PPNode *node) {
+  switch(node->ty) {
+    case PP_NUM:
+      return pp_new_node_bool(node->val);
+    default:
+      fprintf(stderr, "%d: Error, not implemented for type %d\n", __LINE__, node->ty);
+      exit(1);
+  }
+}
+
+PPNode *pp_eval(PreProcessor *p, PPNode *node) {
+  printf("# pp_eval\n");
+  int start_pos = p->pos - 1;
+  switch(node->ty) {
+    case PP_IF: {
+      printf("# eval if\n");
+      PPNode *cond = pp_eval(p, node->body);
+      PPNode *result = pp_node_to_bool(p, cond);
+      Vector *tokens = collect_tokens_until_newline(p);
+      remove_tokens(p, start_pos, tokens->len + 1);
+      if (result->val) {
+        // remove else cluase
+        printf("# true case %d\n", cond->val);
+        remove_endif(p);
+        printf("# removed endif\n");
+      } else {
+        // remove body
+        printf("# false case %d\n", cond->val);
+        remove_until_endif(p);
+        printf("# removed until endif\n");
+      }
+      break;
+    }
+    case PP_NUM:
+      printf("# eval num, val: %d\n", node->val);
+      return node;
+    case '+': {
+      printf("# eval +\n");
+      PPNode *left = pp_eval(p, node->left);
+      PPNode *right = pp_eval(p, node->right);
+      return pp_new_node_num(left->val + right->val);
+    }
+    default:
+      fprintf(stderr, "%d: not implemented yet, node->ty: %d\n", __LINE__, node->ty);
+      exit(1);
+  }
+}
 
 void process_define_macro(PreProcessor *p, Token *token) {
+  printf("# process define macro\n");
   if (strcmp(token->input, "define") == 0) {
     int start_pos = p->pos - 1;
     Token *name = pp_consume_token(p);
@@ -137,6 +328,31 @@ void process_define_macro(PreProcessor *p, Token *token) {
 
     return;
   }
+
+
+  if (strcmp(token->input, "if") == 0) {
+    int start_pos = p->pos - 1;
+    Vector *body = collect_tokens_until_newline(p);
+    PPNode *node = pp_parse(p, body);
+    if (node == NULL) {
+      fprintf(stderr, "ERROR: invalid node generated at %d\n", p->pos);
+      exit(1);
+    }
+    p->pos = start_pos;
+    puts("# start eval if macro\n");
+    pp_eval(p, node);
+    return;
+  }
+
+  if (strcmp(token->input, "undef") == 0) {
+    int start_pos = p->pos - 1;
+    Token *name = pp_consume_token(p);
+    p->pos++;
+    map_delete(p->macros, name->input);
+    remove_tokens(p, start_pos, 3); // #, undex, X => 3tokens
+    return;
+  }
+
 
   if (strcmp(token->input, "include") == 0) {
     int start_pos = p->pos - 1;
@@ -217,7 +433,7 @@ void process_define_macro(PreProcessor *p, Token *token) {
     exit(1);
   }
 
-  //printf("# UNDEFINED directive %s at col: %d, line: %d, pos: %d\n", token->input, token->col_start, token->line_start, p->pos);
+  printf("# UNDEFINED directive %s at col: %d, line: %d, pos: %d\n", token->input, token->col_start, token->line_start, p->pos);
   return;
 }
 
@@ -227,6 +443,8 @@ PreProcessor *new_preprocessor(Meta *meta, Vector *tokens) {
   p->tokens = tokens;
   p->macros = new_map();
   p->pos = 0;
+  p->ctx = malloc(sizeof(PPContext));
+  p->ctx->pos = 0;
   return p;
 }
 
@@ -243,7 +461,7 @@ PreProcessor *pre_process(Meta *meta, Context *ctx, Vector *tokens) {
   }
   printf("# pp2: fetch define macro\n");
   for (p->pos = 0; p->pos < tokens->len; p->pos++) {
-     // printf("# check pos %d / %d\n", p->pos,tokens->len);
+    // printf("# check pos %d / %d\n", p->pos,tokens->len);
     token = tokens->data[p->pos];
     if (p->pos > 0) {
       last_token = tokens->data[p->pos - 1];
