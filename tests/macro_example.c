@@ -1,15 +1,10 @@
-#define X 3+4
-#define Y 123
-#define Z 123
+#define A 1+2
+#define F f+G
+#define G g+H
+#define H h+F
+F
 
 int main() {
-  printf("X: %d\n", X);
-  printf("Y: %d\n", Y);
-
-#ifdef X
-  printf("x is defined\n");
-#endif
-
   return 0;
 }
 

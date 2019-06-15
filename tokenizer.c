@@ -79,7 +79,7 @@ void tokenize(char *p) {
 
     if (*p == '\'' && p[2] == '\'') {
       token->ty = TK_CHAR;
-      token->input = NULL;
+      token->input = substr(p, 3);
       token->val = p[1];
       set_end_pos(token);
       vec_push(tokens, token);
@@ -90,7 +90,7 @@ void tokenize(char *p) {
 
     if (*p == '=' && *(p+1) == '=') {
       token->ty = TK_EQ;
-      token->input = NULL;
+      token->input = substr(p, 2);
       set_end_pos(token);
       vec_push(tokens, token);
       p += 2;
@@ -100,7 +100,7 @@ void tokenize(char *p) {
 
     if (*p == '!' && *(p+1) == '=') {
       token->ty = TK_NEQ;
-      token->input = NULL;
+      token->input = substr(p, 2);
       set_end_pos(token);
       vec_push(tokens, token);
       p += 2;
@@ -109,7 +109,7 @@ void tokenize(char *p) {
 
     if (*p == '>' && *(p+1) == '=') {
       token->ty = TK_LE;
-      token->input = NULL;
+      token->input = substr(p, 2);
       set_end_pos(token);
       vec_push(tokens, token);
       p += 2;
@@ -118,7 +118,7 @@ void tokenize(char *p) {
 
     if (*p == '<' && *(p+1) == '=') {
       token->ty = TK_GE;
-      token->input = NULL;
+      token->input = substr(p, 2);
       set_end_pos(token);
       vec_push(tokens, token);
       p += 2;

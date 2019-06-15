@@ -5,10 +5,16 @@ typedef struct PreProcessor {
   struct Vector *tokens;
   struct Map *macros;
   struct Meta *meta;
+  char *replaced_key;
 } PreProcessor;
 
 Token *pp_current_token(PreProcessor *p) {
   return p->tokens->data[p->pos];
+}
+
+Token *pp_next_token(PreProcessor *p) {
+  if (p->pos == p->tokens->len - 1) return NULL;
+  return p->tokens->data[p->pos+1];
 }
 
 Token *pp_consume_token(PreProcessor *p) {
@@ -39,7 +45,7 @@ void replace_predefined_macro(Meta *meta, Token *token) {
   }
 }
 
-void replace_defined_macro(PreProcessor *p, Token *token) {
+void replace_macro(PreProcessor *p, Token *token) {
   Vector *body = map_get(p->macros, token->input);
   if (body != NULL) {
     int pos = p->pos;
@@ -57,21 +63,17 @@ Vector *collect_tokens_until_newline(PreProcessor *p) {
     vec_push(tks, t);
     t = pp_consume_token(p);
   }
-  printf("# collect tokens %d\n", tks->len);
+  p->pos--;
   return tks;
 }
 
-void process_define_macro(PreProcessor *p, Token *token) {
+void process_macro_definition(PreProcessor *p, Token *token) {
   if (strcmp(token->input, "define") == 0) {
     int start_pos = p->pos - 1;
     Token *name = pp_consume_token(p);
     p->pos++;
     Vector *body = collect_tokens_until_newline(p);
     map_put(p->macros, name->input, body);
-    printf("# macro name %s, body length: %d\n", name->input, body->len);
-    for (int i = 0; i < p->macros->keys->len; i++) {
-      printf("# %d: %s, %x\n", i, p->macros->keys->data[i], p->macros->vals->data[i]);
-    }
     Vector *temp_body = map_get(p->macros, name->input);
     for (int i = 0; i <= 2 + body->len; i++) {
       vec_delete(p->tokens, start_pos);
@@ -96,43 +98,43 @@ PreProcessor *new_preprocessor(Meta *meta) {
   p->tokens = tokens;
   p->macros = new_map();
   p->pos = 0;
+  p->replaced_key = NULL;
   return p;
 }
 
 void pre_process(Meta *meta, Context *ctx, Vector *tokens) {
   printf("# start preprocessing\n");
   PreProcessor *p = new_preprocessor(meta);
-  Token *token;
-  printf("# pp1: replace predefined macro\n");
-  for (int i = 0; i < tokens->len; i++) {
-    token = tokens->data[i];
-    if (token->ty == TK_IDENT) {
-      replace_predefined_macro(meta, token);
-    }
-  }
-  printf("# pp2: fetch define macro\n");
-  for (p->pos = 0; p->pos < tokens->len; p->pos++) {
-    token = tokens->data[p->pos];
-    if (token->ty == TK_IDENT) {
-      process_define_macro(p, token);
-    }
-  }
   p->pos = 0;
-  token = pp_current_token(p);
-  printf("# pp3: replace define macro\n");
+  Token *token = pp_current_token(p);
   while(token != NULL) {
+    printf("# check pos: %d, %s\n", p->pos, token->input);
     if (token->ty == TK_IDENT) {
-      replace_defined_macro(p, token);
+      process_macro_definition(p, token);
+      replace_macro(p, token);
     }
     token = pp_consume_token(p);
   }
-  while (pp_current_token(p) != NULL) {
-    token = pp_current_token(p);
-    if (token->ty == '#') {
-      token = pp_consume_token(p);
-      printf("# macro %s found\n", token->input);
+
+  puts("\n# macro tables -------------------------");
+  Vector *body;
+  char *body_str;
+  int length;
+  Token *t;
+  for (int i = 0; i < p->macros->keys->len; i++) {
+    body= p->macros->vals->data[i];
+    length = 0;
+    for (int j = 0; j < body->len; j++) {
+      t = body->data[j];
+      length += strlen(t->input);
     }
-    p->pos++;
+    body_str = malloc(sizeof(char) * (length + 1));
+    body_str[0] = '\0';
+    for (int j = 0; j < body->len; j++) {
+      t = body->data[j];
+      strcat(body_str, t->input);
+    }
+    printf("# %d %s => %s (%d tokens) \n", i, p->macros->keys->data[i], body_str, body->len);
   }
   printf("# finish preprocessing\n");
 }
